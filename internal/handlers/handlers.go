@@ -63,7 +63,7 @@ func (h *Handlers) HandleMetric(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else {
-		w.WriteHeader(http.StatusNotFound)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
