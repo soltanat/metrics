@@ -27,7 +27,7 @@ func (h *Handlers) HandleMetric(w http.ResponseWriter, r *http.Request) {
 	}
 	path := strings.Split(r.URL.Path, "/")
 	if len(path) != 5 {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
@@ -67,7 +67,7 @@ func (h *Handlers) HandleMetric(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
