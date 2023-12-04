@@ -20,11 +20,7 @@ func (h *Handlers) HandleMetric(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	contentType := r.Header.Get("content-type")
-	if contentType != "text/plain" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+
 	path := strings.Split(r.URL.Path, "/")
 	if len(path) != 5 {
 		w.WriteHeader(http.StatusNotFound)
