@@ -21,6 +21,7 @@ func TestNewPoller(t *testing.T) {
 			}
 			if got.metrics == nil {
 				t.Errorf("poller metrics store is nil")
+				return
 			}
 			if _, ok := got.metrics[pollCounterMetricName]; !ok {
 				t.Errorf("new poller have not metric %s", pollCounterMetricName)
