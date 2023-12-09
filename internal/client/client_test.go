@@ -134,7 +134,7 @@ func TestMetricsClient_Send_IncorrectName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			api := Client{"http://localhost:8080"}
 			err := api.Send(tt.metric)
-			assert.Error(t, err, validationNameError)
+			assert.Error(t, err, errValidationName)
 		})
 	}
 }
@@ -160,7 +160,7 @@ func TestMetricsClient_Send_ServerErrors(t *testing.T) {
 			api := Client{server.URL}
 			err := api.Send(tt.metric)
 
-			assert.Error(t, err, UnexpectedResponseError{
+			assert.Error(t, err, errUnexpectedResponse{
 				StatusCode: 500,
 				Message:    []byte("error"),
 			})
@@ -184,7 +184,7 @@ func TestMetricsClient_Send_AddressError(t *testing.T) {
 			api := Client{"http://bad_address"}
 			err := api.Send(tt.metric)
 
-			var expectedErr HTTPError
+			var expectedErr errHTTP
 			assert.ErrorAs(t, err, &expectedErr)
 		})
 	}

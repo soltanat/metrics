@@ -14,22 +14,22 @@ const (
 	counterEndpointPrefix = "/update/counter"
 )
 
-var validationNameError = fmt.Errorf("min name len 1")
+var errValidationName = fmt.Errorf("min name len 1")
 
-type HTTPError struct {
+type errHTTP struct {
 	Err error
 }
 
-func (e HTTPError) Error() string {
+func (e errHTTP) Error() string {
 	return e.Err.Error()
 }
 
-type UnexpectedResponseError struct {
+type errUnexpectedResponse struct {
 	StatusCode int
 	Message    []byte
 }
 
-func (e UnexpectedResponseError) Error() string {
+func (e errUnexpectedResponse) Error() string {
 	return fmt.Sprintf("unexpected response: %d, %s", e.StatusCode, e.Message)
 }
 
@@ -45,7 +45,7 @@ func New(address string) *Client {
 
 func (c *Client) Send(m internal.Metric) error {
 	if m.Name == "" {
-		return validationNameError
+		return errValidationName
 	}
 
 	var reqURL string
@@ -66,7 +66,7 @@ func (c *Client) Send(m internal.Metric) error {
 func (c *Client) makeRequest(url string) error {
 	resp, err := http.Post(url, "text/plain", http.NoBody)
 	if err != nil {
-		return HTTPError{Err: err}
+		return errHTTP{Err: err}
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
@@ -77,7 +77,7 @@ func (c *Client) makeRequest(url string) error {
 		if err != nil {
 			return fmt.Errorf("close body error: %v", err)
 		}
-		return UnexpectedResponseError{
+		return errUnexpectedResponse{
 			StatusCode: resp.StatusCode,
 			Message:    body,
 		}
