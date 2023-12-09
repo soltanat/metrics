@@ -48,19 +48,19 @@ func (c *Client) Send(m internal.Metric) error {
 		return validationNameError
 	}
 
-	var reqUrl string
+	var reqURL string
 	switch m.Type {
 	case internal.GaugeType:
-		reqUrl, _ = url.JoinPath(
+		reqURL, _ = url.JoinPath(
 			c.address, gaugeEndpointPrefix, m.Name, strconv.FormatFloat(m.Gauge, 'f', -1, 64),
 		)
 	case internal.CounterType:
-		reqUrl, _ = url.JoinPath(
+		reqURL, _ = url.JoinPath(
 			c.address, counterEndpointPrefix, m.Name, fmt.Sprintf("%d", m.Counter),
 		)
 	}
 
-	return c.makeRequest(reqUrl)
+	return c.makeRequest(reqURL)
 }
 
 func (c *Client) makeRequest(url string) error {
