@@ -19,6 +19,9 @@ func TestNewPoller(t *testing.T) {
 			if got == nil {
 				t.Errorf("new poller return nil")
 			}
+			if got.metrics == nil {
+				t.Errorf("poller metrics store is nil")
+			}
 			if _, ok := got.metrics[pollCounterMetricName]; !ok {
 				t.Errorf("new poller have not metric %s", pollCounterMetricName)
 			}
@@ -63,14 +66,20 @@ func TestPeriodicRuntimePoller_poll(t *testing.T) {
 					t.Errorf("poller not polled metric %s", key)
 				}
 			}
-			m, _ := p.metrics[pollCounterMetricName]
-			if m.Counter == previousMetrics[pollCounterMetricName].Counter+1 {
-				t.Errorf("counter metric not incremented")
+			if m, ok := p.metrics[pollCounterMetricName]; ok {
+				if m.Counter == previousMetrics[pollCounterMetricName].Counter+1 {
+					t.Errorf("%s metric not incremented", pollCounterMetricName)
+				}
+			} else {
+				t.Errorf("%s metric not exist", pollCounterMetricName)
 			}
 
-			m, _ = p.metrics[randomValueMetricName]
-			if m.Gauge != previousMetrics[randomValueMetricName].Gauge {
-				t.Errorf("gauge metric value not changed")
+			if m, ok := p.metrics[randomValueMetricName]; ok {
+				if m.Gauge != previousMetrics[randomValueMetricName].Gauge {
+					t.Errorf("%s value not changed", randomValueMetricName)
+				}
+			} else {
+				t.Errorf("%s not exist", randomValueMetricName)
 			}
 		})
 	}
