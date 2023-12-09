@@ -11,3 +11,6 @@ Content-Type: text/plain
 {}
 
 ###
+POST http://{{address}}/update/unknown/testCounter/100
+
+{}

@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/soltanat/metrics/internal/handlers"
+	"github.com/soltanat/metrics/internal/handler"
 	"github.com/soltanat/metrics/internal/storage"
 	"net/http"
 )
 
 func main() {
 	s := storage.NewMemStorage()
-	h := handlers.New(s)
+	h := handler.New(s)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/update/", h.HandleMetric)
