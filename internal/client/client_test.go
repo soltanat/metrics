@@ -103,7 +103,7 @@ func TestMetricsClient_Send(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, req.URL.String(), tt.expectedPath)
 				assert.Equal(t, req.Header.Get("content-type"), "text/plain")
-				rw.Write([]byte(`OK`))
+				_, _ = rw.Write([]byte(`OK`))
 			}))
 			defer server.Close()
 
@@ -153,7 +153,7 @@ func TestMetricsClient_Send_ServerErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				rw.WriteHeader(http.StatusInternalServerError)
-				rw.Write([]byte("error"))
+				_, _ = rw.Write([]byte("error"))
 			}))
 			defer server.Close()
 

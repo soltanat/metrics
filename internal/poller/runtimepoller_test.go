@@ -1,7 +1,6 @@
 package poller
 
 import (
-	"github.com/soltanat/metrics/internal"
 	"testing"
 )
 
@@ -43,9 +42,6 @@ func TestPeriodicRuntimePoller_Get(t *testing.T) {
 }
 
 func TestPeriodicRuntimePoller_poll(t *testing.T) {
-	type fields struct {
-		metrics map[string]internal.Metric
-	}
 	tests := []struct {
 		name string
 	}{
@@ -62,7 +58,7 @@ func TestPeriodicRuntimePoller_poll(t *testing.T) {
 				t.Errorf("Poll error %v", err)
 			}
 
-			for key, _ := range gaugeMetrics {
+			for key := range gaugeMetrics {
 				if _, ok := p.metrics[key]; !ok {
 					t.Errorf("poller not polled metric %s", key)
 				}
