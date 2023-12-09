@@ -18,6 +18,7 @@ func TestNewPoller(t *testing.T) {
 			got := NewPoller()
 			if got == nil {
 				t.Errorf("new poller return nil")
+				return
 			}
 			if got.metrics == nil {
 				t.Errorf("poller metrics store is nil")
