@@ -42,3 +42,14 @@ func (m *Metric) AsString() string {
 	}
 	return ""
 }
+
+func (m *Metric) ValueAsString() string {
+	switch m.Type {
+	case GaugeType:
+		v := strconv.FormatFloat(m.Gauge, 'f', -1, 64)
+		return v
+	case CounterType:
+		return fmt.Sprintf("%d", m.Counter)
+	}
+	return ""
+}

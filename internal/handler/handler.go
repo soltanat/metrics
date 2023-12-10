@@ -27,81 +27,61 @@ func (h *Handlers) GetList(c echo.Context) error {
 	return nil
 }
 
-func (h *Handlers) GetGauge(c echo.Context) error {
-	if err := validateMetricType(c); err != nil {
-		return err
-	}
-	name := c.Param("metricName")
-	metric, err := h.storage.GetGauge(name)
-	if err != nil {
-		if errors.Is(err, storage.ErrMetricNotFound) {
-			return echo.ErrNotFound
-		}
-		return echo.ErrInternalServerError
-	}
-	_, _ = c.Response().Write([]byte(metric.AsString()))
-	return nil
-}
-
-func (h *Handlers) GetCounter(c echo.Context) error {
-	if err := validateMetricType(c); err != nil {
-		return err
-	}
-	name := c.Param("metricName")
-	metric, err := h.storage.GetCounter(name)
-	if err != nil {
-		if errors.Is(err, storage.ErrMetricNotFound) {
-			return echo.ErrNotFound
-		}
-		return echo.ErrInternalServerError
-	}
-	_, _ = c.Response().Write([]byte(metric.AsString()))
-	return nil
-}
-
-func (h *Handlers) StoreCounter(c echo.Context) error {
-	if err := validateMetricType(c); err != nil {
-		return err
-	}
-	name := c.Param("metricName")
-	value := c.Param("metricValue")
-
-	v, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		return echo.ErrBadRequest
-	}
-	err = h.storage.StoreCounter(name, v)
-	if err != nil {
-		return echo.ErrBadRequest
-	}
-	return nil
-}
-
-func (h *Handlers) StoreGauge(c echo.Context) error {
-	if err := validateMetricType(c); err != nil {
-		return err
-	}
-	name := c.Param("metricName")
-	value := c.Param("metricValue")
-
-	v, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return echo.ErrBadRequest
-	}
-	err = h.storage.StoreGauge(name, v)
-	if err != nil {
-		return echo.ErrBadRequest
-	}
-	return nil
-}
-
-func validateMetricType(c echo.Context) error {
+func (h *Handlers) Get(c echo.Context) error {
 	mType := c.Param("metricType")
+	name := c.Param("metricName")
+
+	var metric *internal.Metric
+	var err error
+
 	switch mType {
 	case internal.Gauge:
+		metric, err = h.storage.GetGauge(name)
 	case internal.Counter:
+		metric, err = h.storage.GetCounter(name)
 	default:
 		return echo.ErrBadRequest
 	}
+
+	if err != nil {
+		if errors.Is(err, storage.ErrMetricNotFound) {
+			return echo.ErrNotFound
+		}
+		return echo.ErrInternalServerError
+	}
+	_, _ = c.Response().Write([]byte(metric.ValueAsString()))
+
+	return nil
+
+}
+
+func (h *Handlers) Store(c echo.Context) error {
+	mType := c.Param("metricType")
+	name := c.Param("metricName")
+	value := c.Param("metricValue")
+
+	switch mType {
+	case internal.Gauge:
+		v, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return echo.ErrBadRequest
+		}
+		err = h.storage.StoreGauge(name, v)
+		if err != nil {
+			return echo.ErrBadRequest
+		}
+	case internal.Counter:
+		v, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return echo.ErrBadRequest
+		}
+		err = h.storage.StoreCounter(name, v)
+		if err != nil {
+			return echo.ErrBadRequest
+		}
+	default:
+		return echo.ErrBadRequest
+	}
+
 	return nil
 }
