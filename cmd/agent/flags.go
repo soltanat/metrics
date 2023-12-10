@@ -2,16 +2,15 @@ package main
 
 import (
 	"flag"
-	"time"
 )
 
 var flagAddr string
-var flagReportInterval time.Duration
-var flagPollInterval time.Duration
+var flagReportInterval int
+var flagPollInterval int
 
 func parseFlags() {
 	flag.StringVar(&flagAddr, "a", "localhost:8080", "address and port metrics http server")
-	flag.DurationVar(&flagReportInterval, "r", time.Second*10, "send metrics report interval")
-	flag.DurationVar(&flagPollInterval, "p", time.Second*2, "poll metrics interval")
+	flag.IntVar(&flagReportInterval, "r", 10, "send metrics report interval")
+	flag.IntVar(&flagPollInterval, "p", 2, "poll metrics interval")
 	flag.Parse()
 }

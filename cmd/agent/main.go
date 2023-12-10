@@ -96,5 +96,11 @@ func main() {
 
 	pollerInst := poller.NewPoller()
 	reporterInst := reporter.New(pollerInst, client.New(fmt.Sprintf("http://%s", flagAddr)))
-	Run(context.Background(), flagPollInterval, flagReportInterval, pollerInst, reporterInst)
+	Run(
+		context.Background(),
+		time.Second*time.Duration(flagPollInterval),
+		time.Second*time.Duration(flagReportInterval),
+		pollerInst,
+		reporterInst,
+	)
 }
