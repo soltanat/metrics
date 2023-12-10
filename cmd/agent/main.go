@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/soltanat/metrics/internal"
 	"github.com/soltanat/metrics/internal/client"
 	"github.com/soltanat/metrics/internal/poller"
@@ -94,6 +95,6 @@ func main() {
 	parseFlags()
 
 	pollerInst := poller.NewPoller()
-	reporterInst := reporter.New(pollerInst, client.New(flagAddr))
+	reporterInst := reporter.New(pollerInst, client.New(fmt.Sprintf("http://%s", flagAddr)))
 	Run(context.Background(), flagPollInterval, flagReportInterval, pollerInst, reporterInst)
 }
