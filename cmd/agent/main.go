@@ -14,12 +14,6 @@ import (
 	"time"
 )
 
-const (
-	address               = "http://localhost:8080"
-	defaultPollInterval   = time.Second * 2
-	defaultReportInterval = time.Second * 10
-)
-
 func Run(
 	ctx context.Context, pollInterval, reportInterval time.Duration, poller internal.Poll, reporter internal.Reporter,
 ) {
@@ -97,7 +91,9 @@ func Run(
 }
 
 func main() {
+	parseFlags()
+
 	pollerInst := poller.NewPoller()
-	reporterInst := reporter.New(pollerInst, client.New(address))
-	Run(context.Background(), defaultPollInterval, defaultReportInterval, pollerInst, reporterInst)
+	reporterInst := reporter.New(pollerInst, client.New(flagAddr))
+	Run(context.Background(), flagPollInterval, flagReportInterval, pollerInst, reporterInst)
 }

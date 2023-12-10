@@ -8,6 +8,8 @@ import (
 )
 
 func main() {
+	parseFlags()
+
 	s := storage.NewMemStorage()
 	h := handler.New(s)
 
@@ -21,5 +23,5 @@ func main() {
 
 	e.POST("/update/:metricType/:metricName/:metricValue", h.Store)
 
-	e.Logger.Fatal(e.Start(":8080"))
+	e.Logger.Fatal(e.Start(flagAddr))
 }
