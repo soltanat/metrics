@@ -17,11 +17,11 @@ func main() {
 	e.Use(middleware.Recover())
 
 	e.GET("/", h.GetList)
-	e.GET("/value/gauge/:metricName", h.GetGauge)
-	e.GET("/value/counter/:metricName", h.GetCounter)
+	e.GET("/value/:metricType/:metricName", h.GetGauge)
+	e.GET("/value/:metricType/:metricName", h.GetCounter)
 
-	e.POST("/update/gauge/:metricName/:metricValue", h.StoreGauge)
-	e.POST("/update/counter/:metricName/:metricValue", h.StoreCounter)
+	e.POST("/update/:metricType/:metricName/:metricValue", h.StoreGauge)
+	e.POST("/update/:metricType/:metricName/:metricValue", h.StoreCounter)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }

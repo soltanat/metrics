@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"github.com/labstack/echo/v4"
+	"github.com/soltanat/metrics/internal"
 	"github.com/soltanat/metrics/internal/storage"
 	"strconv"
 )
@@ -27,6 +28,9 @@ func (h *Handlers) GetList(c echo.Context) error {
 }
 
 func (h *Handlers) GetGauge(c echo.Context) error {
+	if err := validateMetricType(c); err != nil {
+		return err
+	}
 	name := c.Param("metricName")
 	metric, err := h.storage.GetGauge(name)
 	if err != nil {
@@ -40,6 +44,9 @@ func (h *Handlers) GetGauge(c echo.Context) error {
 }
 
 func (h *Handlers) GetCounter(c echo.Context) error {
+	if err := validateMetricType(c); err != nil {
+		return err
+	}
 	name := c.Param("metricName")
 	metric, err := h.storage.GetCounter(name)
 	if err != nil {
@@ -53,6 +60,9 @@ func (h *Handlers) GetCounter(c echo.Context) error {
 }
 
 func (h *Handlers) StoreCounter(c echo.Context) error {
+	if err := validateMetricType(c); err != nil {
+		return err
+	}
 	name := c.Param("metricName")
 	value := c.Param("metricValue")
 
@@ -68,6 +78,9 @@ func (h *Handlers) StoreCounter(c echo.Context) error {
 }
 
 func (h *Handlers) StoreGauge(c echo.Context) error {
+	if err := validateMetricType(c); err != nil {
+		return err
+	}
 	name := c.Param("metricName")
 	value := c.Param("metricValue")
 
@@ -77,6 +90,17 @@ func (h *Handlers) StoreGauge(c echo.Context) error {
 	}
 	err = h.storage.StoreGauge(name, v)
 	if err != nil {
+		return echo.ErrBadRequest
+	}
+	return nil
+}
+
+func validateMetricType(c echo.Context) error {
+	mType := c.Param("metricType")
+	switch mType {
+	case internal.Gauge:
+	case internal.Counter:
+	default:
 		return echo.ErrBadRequest
 	}
 	return nil
