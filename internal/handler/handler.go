@@ -1,10 +1,10 @@
 package handler
 
 import (
+	"errors"
+	"github.com/labstack/echo/v4"
 	"github.com/soltanat/metrics/internal/storage"
-	"net/http"
 	"strconv"
-	"strings"
 )
 
 type Handlers struct {
@@ -15,56 +15,69 @@ func New(s storage.Storage) *Handlers {
 	return &Handlers{storage: s}
 }
 
-func (h *Handlers) HandleMetric(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
+func (h *Handlers) GetList(c echo.Context) error {
+	metrics, err := h.storage.GetList()
+	if err != nil {
+		return echo.ErrInternalServerError
 	}
-
-	path := strings.Split(r.URL.Path, "/")
-	if len(path) != 5 {
-		w.WriteHeader(http.StatusNotFound)
-		return
+	for _, m := range metrics {
+		_, _ = c.Response().Write([]byte(m.AsString() + "\n"))
 	}
+	return nil
+}
 
-	metricType, metricName, metricValue := path[2], path[3], path[4]
-	if metricType == storage.Gauge || metricType == storage.Counter {
-		if metricName == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			return
+func (h *Handlers) GetGauge(c echo.Context) error {
+	name := c.Param("metricName")
+	metric, err := h.storage.GetGauge(name)
+	if err != nil {
+		if errors.Is(err, storage.ErrMetricNotFound) {
+			return echo.ErrNotFound
 		}
-
-		switch metricType {
-		case storage.Counter:
-			value, err := strconv.ParseInt(metricValue, 10, 64)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			err = h.storage.StoreCounter(metricName, value)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-		case storage.Gauge:
-			value, err := strconv.ParseFloat(metricValue, 64)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			err = h.storage.StoreGauge(metricName, value)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-		default:
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-	} else {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return echo.ErrInternalServerError
 	}
+	_, _ = c.Response().Write([]byte(metric.AsString()))
+	return nil
+}
 
+func (h *Handlers) GetCounter(c echo.Context) error {
+	name := c.Param("metricName")
+	metric, err := h.storage.GetCounter(name)
+	if err != nil {
+		if errors.Is(err, storage.ErrMetricNotFound) {
+			return echo.ErrNotFound
+		}
+		return echo.ErrInternalServerError
+	}
+	_, _ = c.Response().Write([]byte(metric.AsString()))
+	return nil
+}
+
+func (h *Handlers) StoreCounter(c echo.Context) error {
+	name := c.Param("metricName")
+	value := c.Param("metricValue")
+
+	v, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return echo.ErrBadRequest
+	}
+	err = h.storage.StoreCounter(name, v)
+	if err != nil {
+		return echo.ErrBadRequest
+	}
+	return nil
+}
+
+func (h *Handlers) StoreGauge(c echo.Context) error {
+	name := c.Param("metricName")
+	value := c.Param("metricValue")
+
+	v, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return echo.ErrBadRequest
+	}
+	err = h.storage.StoreGauge(name, v)
+	if err != nil {
+		return echo.ErrBadRequest
+	}
+	return nil
 }

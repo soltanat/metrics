@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"reflect"
 	"runtime"
+	"sync"
 )
 
 const (
@@ -14,25 +15,25 @@ const (
 )
 
 type RuntimePoller struct {
-	metrics map[string]internal.Metric
+	metrics *sync.Map
 }
 
 func NewPoller() *RuntimePoller {
-	metrics := make(map[string]internal.Metric)
-	pollCounter := internal.Metric{
+	metrics := &sync.Map{}
+	pollCounter := &internal.Metric{
 		Name:    pollCounterMetricName,
 		Type:    internal.CounterType,
 		Counter: 0,
 		Gauge:   0,
 	}
-	randomValue := internal.Metric{
+	randomValue := &internal.Metric{
 		Name:    randomValueMetricName,
 		Type:    internal.GaugeType,
 		Counter: 0,
 		Gauge:   0,
 	}
-	metrics[pollCounterMetricName] = pollCounter
-	metrics[randomValueMetricName] = randomValue
+	metrics.Store(pollCounterMetricName, pollCounter)
+	metrics.Store(randomValueMetricName, randomValue)
 
 	poller := &RuntimePoller{metrics: metrics}
 
@@ -41,9 +42,12 @@ func NewPoller() *RuntimePoller {
 
 func (p *RuntimePoller) Get() []internal.Metric {
 	var metrics []internal.Metric
-	for _, value := range p.metrics {
-		metrics = append(metrics, value)
-	}
+
+	p.metrics.Range(func(key, value interface{}) bool {
+		metrics = append(metrics, *value.(*internal.Metric))
+		return true
+	})
+
 	return metrics
 }
 
@@ -72,19 +76,19 @@ func (p *RuntimePoller) Poll() error {
 			return fmt.Errorf("unkonwn metric type %T", v.Field(i).Interface())
 		}
 
-		p.metrics[metricName] = internal.Metric{
+		p.metrics.Store(metricName, &internal.Metric{
 			Name:    metricName,
 			Type:    internal.GaugeType,
 			Counter: 0,
 			Gauge:   metricValue,
-		}
+		})
 	}
 
-	if m, ok := p.metrics[randomValueMetricName]; ok {
-		m.SetGauge(rand.Float64())
+	if m, ok := p.metrics.Load(randomValueMetricName); ok {
+		m.(*internal.Metric).SetGauge(rand.Float64())
 	}
-	if m, ok := p.metrics[pollCounterMetricName]; ok {
-		m.IncCount()
+	if m, ok := p.metrics.Load(pollCounterMetricName); ok {
+		m.(*internal.Metric).IncCounter()
 	}
 	return nil
 }

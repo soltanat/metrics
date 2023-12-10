@@ -50,18 +50,22 @@ func Run(
 		defer wg.Done()
 		ticker := time.NewTicker(pollInterval)
 		log.Printf("runned poller goroutine")
-		select {
-		case <-ticker.C:
-			log.Printf("call poller")
-			err := poller.Poll()
-			if err != nil {
-				cancel()
+		for {
+			select {
+			case <-ticker.C:
+				log.Printf("call poller")
+				err := poller.Poll()
+				if err != nil {
+					log.Printf("poller error: %v", err)
+					cancel()
+					return
+				}
+				log.Printf("polled metrics")
+			case <-ctx.Done():
+				log.Printf("poller get context.Done")
+				ticker.Stop()
 				return
 			}
-		case <-ctx.Done():
-			log.Printf("poller get context.Done")
-			ticker.Stop()
-			return
 		}
 	}()
 
@@ -70,18 +74,22 @@ func Run(
 		defer wg.Done()
 		ticker := time.NewTicker(reportInterval)
 		log.Printf("runned reporter goroutine")
-		select {
-		case <-ticker.C:
-			log.Printf("call reporter")
-			err := reporter.Report()
-			if err != nil {
-				cancel()
+		for {
+			select {
+			case <-ticker.C:
+				log.Printf("call reporter")
+				err := reporter.Report()
+				if err != nil {
+					log.Printf("reporter error: %v", err)
+					cancel()
+					return
+				}
+				log.Printf("metrics reported")
+			case <-ctx.Done():
+				log.Printf("reporter get context.Done")
+				ticker.Stop()
 				return
 			}
-		case <-ctx.Done():
-			log.Printf("reporter get context.Done")
-			ticker.Stop()
-			return
 		}
 	}()
 

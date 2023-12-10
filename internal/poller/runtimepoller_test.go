@@ -1,6 +1,7 @@
 package poller
 
 import (
+	"github.com/soltanat/metrics/internal"
 	"testing"
 )
 
@@ -24,10 +25,10 @@ func TestNewPoller(t *testing.T) {
 				t.Errorf("poller metrics store is nil")
 				return
 			}
-			if _, ok := got.metrics[pollCounterMetricName]; !ok {
+			if _, ok := got.metrics.Load(pollCounterMetricName); !ok {
 				t.Errorf("new poller have not metric %s", pollCounterMetricName)
 			}
-			if _, ok := got.metrics[randomValueMetricName]; !ok {
+			if _, ok := got.metrics.Load(randomValueMetricName); !ok {
 				t.Errorf("new poller have not metric %s", randomValueMetricName)
 			}
 		})
@@ -64,21 +65,25 @@ func TestPeriodicRuntimePoller_poll(t *testing.T) {
 			}
 
 			for key := range gaugeMetrics {
-				if _, ok := p.metrics[key]; !ok {
+				if _, ok := p.metrics.Load(key); !ok {
 					t.Errorf("poller not polled metric %s", key)
 				}
 			}
-			if m, ok := p.metrics[pollCounterMetricName]; ok {
-				if m.Counter == previousMetrics[pollCounterMetricName].Counter+1 {
-					t.Errorf("%s metric not incremented", pollCounterMetricName)
+			if m, ok := p.metrics.Load(pollCounterMetricName); ok {
+				if p, ok := previousMetrics.Load(pollCounterMetricName); ok {
+					if m.(*internal.Metric).Counter == p.(*internal.Metric).Counter+1 {
+						t.Errorf("%s metric not incremented", pollCounterMetricName)
+					}
 				}
 			} else {
 				t.Errorf("%s metric not exist", pollCounterMetricName)
 			}
 
-			if m, ok := p.metrics[randomValueMetricName]; ok {
-				if m.Gauge != previousMetrics[randomValueMetricName].Gauge {
-					t.Errorf("%s value not changed", randomValueMetricName)
+			if m, ok := p.metrics.Load(randomValueMetricName); ok {
+				if p, ok := previousMetrics.Load(randomValueMetricName); ok {
+					if m.(*internal.Metric).Counter == p.(*internal.Metric).Counter+1 {
+						t.Errorf("%s metric not incremented", randomValueMetricName)
+					}
 				}
 			} else {
 				t.Errorf("%s not exist", randomValueMetricName)

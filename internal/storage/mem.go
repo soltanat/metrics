@@ -1,5 +1,7 @@
 package storage
 
+import "github.com/soltanat/metrics/internal"
+
 type MemStorage struct {
 	gauge   map[string]float64
 	counter map[string]int64
@@ -20,4 +22,51 @@ func (s MemStorage) StoreGauge(name string, value float64) error {
 func (s MemStorage) StoreCounter(name string, value int64) error {
 	s.counter[name] += value
 	return nil
+}
+
+func (s MemStorage) GetGauge(name string) (*internal.Metric, error) {
+	m, ok := s.gauge[name]
+	if !ok {
+		return nil, ErrMetricNotFound
+	}
+	return &internal.Metric{
+		Type:    internal.GaugeType,
+		Name:    name,
+		Gauge:   m,
+		Counter: 0,
+	}, nil
+}
+
+func (s MemStorage) GetCounter(name string) (*internal.Metric, error) {
+	m, ok := s.counter[name]
+	if !ok {
+		return nil, ErrMetricNotFound
+	}
+	return &internal.Metric{
+		Type:    internal.CounterType,
+		Name:    name,
+		Gauge:   0,
+		Counter: m,
+	}, nil
+}
+
+func (s MemStorage) GetList() ([]internal.Metric, error) {
+	var metrics []internal.Metric
+	for k, v := range s.counter {
+		metrics = append(metrics, internal.Metric{
+			Type:    internal.CounterType,
+			Name:    k,
+			Gauge:   0,
+			Counter: v,
+		})
+	}
+	for k, v := range s.gauge {
+		metrics = append(metrics, internal.Metric{
+			Type:    internal.GaugeType,
+			Name:    k,
+			Gauge:   v,
+			Counter: 0,
+		})
+	}
+	return metrics, nil
 }
