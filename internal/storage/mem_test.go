@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/soltanat/metrics/internal"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
@@ -40,7 +41,12 @@ func TestMemStorage_StoreCounter(t *testing.T) {
 				gauge:   tt.fields.gauge,
 				counter: tt.fields.counter,
 			}
-			if err := s.StoreCounter(tt.args.name, tt.args.value); (err != nil) != tt.wantErr {
+			m := internal.Metric{
+				Type:    internal.CounterType,
+				Name:    tt.args.name,
+				Counter: tt.args.value,
+			}
+			if err := s.Store(&m); (err != nil) != tt.wantErr {
 				assert.Equal(t, tt.fields.gauge[tt.args.name], tt.args.value)
 				assert.NoError(t, err)
 			}
@@ -82,7 +88,12 @@ func TestMemStorage_StoreGauge(t *testing.T) {
 				gauge:   tt.fields.gauge,
 				counter: tt.fields.counter,
 			}
-			if err := s.StoreGauge(tt.args.name, tt.args.value); (err != nil) != tt.wantErr {
+			m := internal.Metric{
+				Type:  internal.GaugeType,
+				Name:  tt.args.name,
+				Gauge: tt.args.value,
+			}
+			if err := s.Store(&m); (err != nil) != tt.wantErr {
 				assert.Equal(t, tt.fields.counter[tt.args.name], tt.args.value)
 				assert.NoError(t, err)
 			}
@@ -93,11 +104,11 @@ func TestMemStorage_StoreGauge(t *testing.T) {
 func TestNewMemStorage(t *testing.T) {
 	tests := []struct {
 		name string
-		want MemStorage
+		want *MemStorage
 	}{
 		{
 			"success new",
-			MemStorage{
+			&MemStorage{
 				gauge:   make(map[string]float64),
 				counter: make(map[string]int64),
 			},

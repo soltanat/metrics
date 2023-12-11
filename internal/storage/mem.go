@@ -7,24 +7,24 @@ type MemStorage struct {
 	counter map[string]int64
 }
 
-func NewMemStorage() MemStorage {
-	return MemStorage{
+func NewMemStorage() *MemStorage {
+	return &MemStorage{
 		gauge:   make(map[string]float64),
 		counter: make(map[string]int64),
 	}
 }
 
-func (s MemStorage) StoreGauge(name string, value float64) error {
-	s.gauge[name] = value
+func (s *MemStorage) Store(metric *internal.Metric) error {
+	switch metric.Type {
+	case internal.CounterType:
+		s.counter[metric.Name] = metric.Counter
+	case internal.GaugeType:
+		s.gauge[metric.Name] = metric.Gauge
+	}
 	return nil
 }
 
-func (s MemStorage) StoreCounter(name string, value int64) error {
-	s.counter[name] += value
-	return nil
-}
-
-func (s MemStorage) GetGauge(name string) (*internal.Metric, error) {
+func (s *MemStorage) GetGauge(name string) (*internal.Metric, error) {
 	m, ok := s.gauge[name]
 	if !ok {
 		return nil, ErrMetricNotFound
@@ -37,7 +37,7 @@ func (s MemStorage) GetGauge(name string) (*internal.Metric, error) {
 	}, nil
 }
 
-func (s MemStorage) GetCounter(name string) (*internal.Metric, error) {
+func (s *MemStorage) GetCounter(name string) (*internal.Metric, error) {
 	m, ok := s.counter[name]
 	if !ok {
 		return nil, ErrMetricNotFound
@@ -50,7 +50,7 @@ func (s MemStorage) GetCounter(name string) (*internal.Metric, error) {
 	}, nil
 }
 
-func (s MemStorage) GetList() ([]internal.Metric, error) {
+func (s *MemStorage) GetList() ([]internal.Metric, error) {
 	var metrics []internal.Metric
 	for k, v := range s.counter {
 		metrics = append(metrics, internal.Metric{

@@ -127,7 +127,13 @@ func TestHandlers_Store(t *testing.T) {
 			mockedFields: mockedFields{storage: &storage.MockStorage{}},
 			wantRespCode: http.StatusOK,
 			on: func(fields *mockedFields) {
-				fields.storage.On("StoreCounter", "name", int64(1)).Return(nil)
+				m := &internal.Metric{
+					Type:    internal.CounterType,
+					Name:    "name",
+					Counter: 1,
+				}
+				fields.storage.On("GetCounter", "name").Return(m, nil)
+				fields.storage.On("Store", m).Return(nil)
 			},
 		},
 		{
@@ -136,7 +142,11 @@ func TestHandlers_Store(t *testing.T) {
 			mockedFields: mockedFields{storage: &storage.MockStorage{}},
 			wantRespCode: http.StatusOK,
 			on: func(fields *mockedFields) {
-				fields.storage.On("StoreGauge", "name", 1.1).Return(nil)
+				fields.storage.On("Store", &internal.Metric{
+					Type:  internal.GaugeType,
+					Name:  "name",
+					Gauge: 1.1,
+				}).Return(nil)
 			},
 		},
 		{

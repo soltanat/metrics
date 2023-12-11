@@ -8,8 +8,7 @@ import (
 var ErrMetricNotFound = fmt.Errorf("metric not found")
 
 type Storage interface {
-	StoreGauge(name string, value float64) error
-	StoreCounter(name string, value int64) error
+	Store(metric *internal.Metric) error
 	GetGauge(name string) (*internal.Metric, error)
 	GetCounter(name string) (*internal.Metric, error)
 	GetList() ([]internal.Metric, error)

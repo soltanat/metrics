@@ -60,26 +60,36 @@ func (h *Handlers) Store(c echo.Context) error {
 	name := c.Param("metricName")
 	value := c.Param("metricValue")
 
+	var m *internal.Metric
 	switch mType {
 	case internal.Gauge:
 		v, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return echo.ErrBadRequest
 		}
-		err = h.storage.StoreGauge(name, v)
-		if err != nil {
-			return echo.ErrBadRequest
+		m = &internal.Metric{
+			Type:  internal.GaugeType,
+			Name:  name,
+			Gauge: v,
 		}
 	case internal.Counter:
 		v, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return echo.ErrBadRequest
 		}
-		err = h.storage.StoreCounter(name, v)
+		m, err = h.storage.GetCounter(name)
 		if err != nil {
-			return echo.ErrBadRequest
+			if !errors.Is(err, storage.ErrMetricNotFound) {
+				return echo.ErrBadRequest
+			}
 		}
+		m.AddCounter(v)
 	default:
+		return echo.ErrBadRequest
+	}
+
+	err := h.storage.Store(m)
+	if err != nil {
 		return echo.ErrBadRequest
 	}
 

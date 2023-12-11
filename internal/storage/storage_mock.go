@@ -9,13 +9,8 @@ type MockStorage struct {
 	mock.Mock
 }
 
-func (m *MockStorage) StoreGauge(name string, value float64) error {
-	args := m.Called(name, value)
-	return args.Error(0)
-}
-
-func (m *MockStorage) StoreCounter(name string, value int64) error {
-	args := m.Called(name, value)
+func (m *MockStorage) Store(metric *internal.Metric) error {
+	args := m.Called(metric)
 	return args.Error(0)
 }
 
