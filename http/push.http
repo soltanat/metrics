@@ -21,3 +21,6 @@ Content-Type: text/plain
 POST http://{{address}}/update/unknown/testCounter/100
 
 {}
+
+###
+GET http://{{address}}/value/gauge/testUnknown133

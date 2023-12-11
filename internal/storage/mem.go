@@ -32,7 +32,7 @@ func (s *MemStorage) Store(metric *model.Metric) error {
 func (s *MemStorage) GetGauge(name string) (*model.Metric, error) {
 	v, ok := s.gauge[name]
 	if !ok {
-		return nil, model.ErrInvalidMetricType
+		return nil, model.ErrMetricNotFound
 	}
 	return model.NewGauge(name, v), nil
 }
