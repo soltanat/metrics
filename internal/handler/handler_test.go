@@ -137,6 +137,21 @@ func TestHandlers_Store(t *testing.T) {
 			},
 		},
 		{
+			name:         "store new counter",
+			path:         "/update/counter/name/1",
+			mockedFields: mockedFields{storage: &storage.MockStorage{}},
+			wantRespCode: http.StatusOK,
+			on: func(fields *mockedFields) {
+				m := &internal.Metric{
+					Type:    internal.CounterType,
+					Name:    "name",
+					Counter: 1,
+				}
+				fields.storage.On("GetCounter", "name").Return(nil, storage.ErrMetricNotFound)
+				fields.storage.On("Store", m).Return(nil)
+			},
+		},
+		{
 			name:         "store gauge",
 			path:         "/update/gauge/name/1.1",
 			mockedFields: mockedFields{storage: &storage.MockStorage{}},

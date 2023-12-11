@@ -82,8 +82,14 @@ func (h *Handlers) Store(c echo.Context) error {
 			if !errors.Is(err, storage.ErrMetricNotFound) {
 				return echo.ErrBadRequest
 			}
+			m = &internal.Metric{
+				Type:    internal.CounterType,
+				Name:    name,
+				Counter: v,
+			}
+		} else {
+			m.AddCounter(v)
 		}
-		m.AddCounter(v)
 	default:
 		return echo.ErrBadRequest
 	}
