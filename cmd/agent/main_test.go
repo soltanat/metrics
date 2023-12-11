@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/soltanat/metrics/internal"
+	"github.com/soltanat/metrics/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -13,8 +13,8 @@ type PollerMock struct {
 	mock.Mock
 }
 
-func (m *PollerMock) Get() []internal.Metric {
-	return []internal.Metric{}
+func (m *PollerMock) Get() ([]model.Metric, error) {
+	return []model.Metric{}, nil
 }
 
 func (m *PollerMock) Poll() error {

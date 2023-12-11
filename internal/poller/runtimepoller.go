@@ -2,11 +2,11 @@ package poller
 
 import (
 	"fmt"
-	"github.com/soltanat/metrics/internal"
+	"github.com/soltanat/metrics/internal/model"
+	"github.com/soltanat/metrics/internal/storage"
 	"math/rand"
 	"reflect"
 	"runtime"
-	"sync"
 )
 
 const (
@@ -15,40 +15,31 @@ const (
 )
 
 type RuntimePoller struct {
-	metrics *sync.Map
+	storage storage.Storage
 }
 
-func NewPoller() *RuntimePoller {
-	metrics := &sync.Map{}
-	pollCounter := &internal.Metric{
-		Name:    pollCounterMetricName,
-		Type:    internal.CounterType,
-		Counter: 0,
-		Gauge:   0,
-	}
-	randomValue := &internal.Metric{
-		Name:    randomValueMetricName,
-		Type:    internal.GaugeType,
-		Counter: 0,
-		Gauge:   0,
-	}
-	metrics.Store(pollCounterMetricName, pollCounter)
-	metrics.Store(randomValueMetricName, randomValue)
+func NewPoller() (*RuntimePoller, error) {
+	s := storage.NewMemStorage()
 
-	poller := &RuntimePoller{metrics: metrics}
+	pollCounter := model.NewCounter(pollCounterMetricName, 0)
+	randomValue := model.NewGauge(randomValueMetricName, 0)
 
-	return poller
+	err := s.Store(pollCounter)
+	if err != nil {
+		return nil, err
+	}
+	err = s.Store(randomValue)
+	if err != nil {
+		return nil, err
+	}
+
+	poller := &RuntimePoller{storage: s}
+
+	return poller, nil
 }
 
-func (p *RuntimePoller) Get() []internal.Metric {
-	var metrics []internal.Metric
-
-	p.metrics.Range(func(key, value interface{}) bool {
-		metrics = append(metrics, *value.(*internal.Metric))
-		return true
-	})
-
-	return metrics
+func (p *RuntimePoller) Get() ([]model.Metric, error) {
+	return p.storage.GetList()
 }
 
 func (p *RuntimePoller) Poll() error {
@@ -76,20 +67,24 @@ func (p *RuntimePoller) Poll() error {
 			return fmt.Errorf("unkonwn metric type %T", v.Field(i).Interface())
 		}
 
-		p.metrics.Store(metricName, &internal.Metric{
-			Name:    metricName,
-			Type:    internal.GaugeType,
-			Counter: 0,
-			Gauge:   metricValue,
-		})
+		err := p.storage.Store(model.NewGauge(metricName, metricValue))
+		if err != nil {
+			return err
+		}
 	}
 
-	if m, ok := p.metrics.Load(randomValueMetricName); ok {
-		m.(*internal.Metric).SetGauge(rand.Float64())
+	if m, err := p.storage.GetGauge(randomValueMetricName); err != nil {
+		return err
+	} else {
+		m.SetGauge(rand.Float64())
 	}
-	if m, ok := p.metrics.Load(pollCounterMetricName); ok {
-		m.(*internal.Metric).IncCounter()
+
+	if m, err := p.storage.GetCounter(pollCounterMetricName); err != nil {
+		return err
+	} else {
+		m.IncCounter()
 	}
+
 	return nil
 }
 

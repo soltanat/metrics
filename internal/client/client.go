@@ -2,11 +2,10 @@ package client
 
 import (
 	"fmt"
-	"github.com/soltanat/metrics/internal"
+	"github.com/soltanat/metrics/internal/model"
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 )
 
 const (
@@ -43,20 +42,20 @@ func New(address string) *Client {
 	}
 }
 
-func (c *Client) Send(m internal.Metric) error {
+func (c *Client) Send(m *model.Metric) error {
 	if m.Name == "" {
 		return errValidationName
 	}
 
 	var reqURL string
 	switch m.Type {
-	case internal.GaugeType:
+	case model.MetricTypeGauge:
 		reqURL, _ = url.JoinPath(
-			c.address, gaugeEndpointPrefix, m.Name, strconv.FormatFloat(m.Gauge, 'f', -1, 64),
+			c.address, gaugeEndpointPrefix, m.Name, m.ValueAsString(),
 		)
-	case internal.CounterType:
+	case model.MetricTypeCounter:
 		reqURL, _ = url.JoinPath(
-			c.address, counterEndpointPrefix, m.Name, fmt.Sprintf("%d", m.Counter),
+			c.address, counterEndpointPrefix, m.Name, m.ValueAsString(),
 		)
 	}
 

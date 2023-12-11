@@ -2,7 +2,7 @@ package client
 
 import (
 	"fmt"
-	"github.com/soltanat/metrics/internal"
+	"github.com/soltanat/metrics/internal/model"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -14,87 +14,47 @@ const (
 	counterPathTmpl = "/update/counter/%s/%s"
 )
 
-var defaultMetricInst = internal.Metric{
-	Type:    internal.GaugeType,
-	Name:    "name",
-	Counter: 1,
-	Gauge:   0,
-}
+var defaultMetricInst = model.NewGauge("name", 1.1)
 
 func TestMetricsClient_Send(t *testing.T) {
 	tests := []struct {
 		name         string
-		metric       internal.Metric
+		metric       *model.Metric
 		expectedPath string
 	}{
 		{
 			"gauge metric positive",
-			internal.Metric{
-				Type:    internal.GaugeType,
-				Name:    "name",
-				Counter: 0,
-				Gauge:   1.123,
-			},
+			model.NewGauge("name", 1.123),
 			fmt.Sprintf(gaugePathTmpl, "name", "1.123"),
 		},
 		{
 			"gauge metric round",
-			internal.Metric{
-				Type:    internal.GaugeType,
-				Name:    "name",
-				Counter: 0,
-				Gauge:   1,
-			},
+			model.NewGauge("name", 1),
 			fmt.Sprintf(gaugePathTmpl, "name", "1"),
 		},
 		{
 			"gauge metric negative",
-			internal.Metric{
-				Type:    internal.GaugeType,
-				Name:    "name",
-				Counter: 0,
-				Gauge:   -1.123,
-			},
+			model.NewGauge("name", -1.123),
 			fmt.Sprintf(gaugePathTmpl, "name", "-1.123"),
 		},
 		{
 			"gauge metric zero",
-			internal.Metric{
-				Type:    internal.GaugeType,
-				Name:    "name",
-				Counter: 0,
-				Gauge:   0,
-			},
+			model.NewGauge("name", 0),
 			fmt.Sprintf(gaugePathTmpl, "name", "0"),
 		},
 		{
 			"counter metric zero",
-			internal.Metric{
-				Type:    internal.CounterType,
-				Name:    "name",
-				Counter: 0,
-				Gauge:   0,
-			},
+			model.NewCounter("name", 0),
 			fmt.Sprintf(counterPathTmpl, "name", "0"),
 		},
 		{
 			"counter metric negative",
-			internal.Metric{
-				Type:    internal.CounterType,
-				Name:    "name",
-				Counter: -1,
-				Gauge:   0,
-			},
+			model.NewCounter("name", -1),
 			fmt.Sprintf(counterPathTmpl, "name", "-1"),
 		},
 		{
 			"counter metric positive",
-			internal.Metric{
-				Type:    internal.CounterType,
-				Name:    "name",
-				Counter: 123,
-				Gauge:   0,
-			},
+			model.NewCounter("name", 123),
 			fmt.Sprintf(counterPathTmpl, "name", "123"),
 		},
 	}
@@ -118,16 +78,11 @@ func TestMetricsClient_Send(t *testing.T) {
 func TestMetricsClient_Send_IncorrectName(t *testing.T) {
 	tests := []struct {
 		name   string
-		metric internal.Metric
+		metric *model.Metric
 	}{
 		{
 			"empty name",
-			internal.Metric{
-				Type:    internal.GaugeType,
-				Name:    "",
-				Counter: 0,
-				Gauge:   0,
-			},
+			model.NewGauge("", 0),
 		},
 	}
 	for _, tt := range tests {
@@ -142,7 +97,7 @@ func TestMetricsClient_Send_IncorrectName(t *testing.T) {
 func TestMetricsClient_Send_ServerErrors(t *testing.T) {
 	tests := []struct {
 		name   string
-		metric internal.Metric
+		metric *model.Metric
 	}{
 		{
 			"server error",
@@ -171,7 +126,7 @@ func TestMetricsClient_Send_ServerErrors(t *testing.T) {
 func TestMetricsClient_Send_AddressError(t *testing.T) {
 	tests := []struct {
 		name   string
-		metric internal.Metric
+		metric *model.Metric
 	}{
 		{
 			"address error",

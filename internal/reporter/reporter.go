@@ -19,9 +19,12 @@ func New(poller internal.Poll, client *client.Client) *Reporter {
 }
 
 func (w *Reporter) Report() error {
-	metrics := w.Poller.Get()
+	metrics, err := w.Poller.Get()
+	if err != nil {
+		return err
+	}
 	for _, m := range metrics {
-		err := w.Client.Send(m)
+		err := w.Client.Send(&m)
 		if err != nil {
 			return err
 		}

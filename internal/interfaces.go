@@ -1,7 +1,9 @@
 package internal
 
+import "github.com/soltanat/metrics/internal/model"
+
 type Poll interface {
-	Get() []Metric
+	Get() ([]model.Metric, error)
 	Poll() error
 }
 

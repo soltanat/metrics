@@ -94,7 +94,11 @@ func Run(
 func main() {
 	parseFlags()
 
-	pollerInst := poller.NewPoller()
+	pollerInst, err := poller.NewPoller()
+	if err != nil {
+		log.Print(err)
+		return
+	}
 	reporterInst := reporter.New(pollerInst, client.New(fmt.Sprintf("http://%s", flagAddr)))
 	Run(
 		context.Background(),

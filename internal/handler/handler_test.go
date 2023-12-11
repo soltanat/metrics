@@ -2,7 +2,7 @@ package handler
 
 import (
 	"github.com/go-resty/resty/v2"
-	"github.com/soltanat/metrics/internal"
+	"github.com/soltanat/metrics/internal/model"
 	"github.com/soltanat/metrics/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -31,12 +31,9 @@ func TestHandlers_Get(t *testing.T) {
 			wantResponse:   "1",
 			wantStatusCode: http.StatusOK,
 			on: func(fields *mockedFields) {
-				fields.storage.On("GetCounter", "counter1").Return(&internal.Metric{
-					Type:    internal.CounterType,
-					Name:    "counter1",
-					Gauge:   0,
-					Counter: 1,
-				}, nil)
+				fields.storage.On("GetCounter", "counter1").Return(
+					model.NewCounter("counter1", 1), nil,
+				)
 			},
 		},
 		{
@@ -46,12 +43,9 @@ func TestHandlers_Get(t *testing.T) {
 			wantResponse:   "1.1",
 			wantStatusCode: http.StatusOK,
 			on: func(fields *mockedFields) {
-				fields.storage.On("GetGauge", "gauge1").Return(&internal.Metric{
-					Type:    internal.GaugeType,
-					Name:    "gauge1",
-					Gauge:   1.1,
-					Counter: 0,
-				}, nil)
+				fields.storage.On("GetGauge", "gauge1").Return(
+					model.NewGauge("gauge1", 1.1), nil,
+				)
 			},
 		},
 		{
@@ -69,7 +63,9 @@ func TestHandlers_Get(t *testing.T) {
 			wantStatusCode: http.StatusNotFound,
 			wantResponse:   "",
 			on: func(fields *mockedFields) {
-				fields.storage.On("GetGauge", "name").Return(nil, storage.ErrMetricNotFound)
+				fields.storage.On("GetGauge", "name").Return(
+					nil, model.ErrMetricNotFound,
+				)
 			},
 		},
 		{
@@ -79,7 +75,9 @@ func TestHandlers_Get(t *testing.T) {
 			wantStatusCode: http.StatusNotFound,
 			wantResponse:   "",
 			on: func(fields *mockedFields) {
-				fields.storage.On("GetCounter", "name").Return(nil, storage.ErrMetricNotFound)
+				fields.storage.On("GetCounter", "name").Return(
+					nil, model.ErrMetricNotFound,
+				)
 			},
 		},
 	}
@@ -127,11 +125,7 @@ func TestHandlers_Store(t *testing.T) {
 			mockedFields: mockedFields{storage: &storage.MockStorage{}},
 			wantRespCode: http.StatusOK,
 			on: func(fields *mockedFields) {
-				m := &internal.Metric{
-					Type:    internal.CounterType,
-					Name:    "name",
-					Counter: 1,
-				}
+				m := model.NewCounter("name", 1)
 				fields.storage.On("GetCounter", "name").Return(m, nil)
 				fields.storage.On("Store", m).Return(nil)
 			},
@@ -142,12 +136,10 @@ func TestHandlers_Store(t *testing.T) {
 			mockedFields: mockedFields{storage: &storage.MockStorage{}},
 			wantRespCode: http.StatusOK,
 			on: func(fields *mockedFields) {
-				m := &internal.Metric{
-					Type:    internal.CounterType,
-					Name:    "name",
-					Counter: 1,
-				}
-				fields.storage.On("GetCounter", "name").Return(nil, storage.ErrMetricNotFound)
+				m := model.NewCounter("name", 1)
+				fields.storage.On("GetCounter", "name").Return(
+					nil, model.ErrMetricNotFound,
+				)
 				fields.storage.On("Store", m).Return(nil)
 			},
 		},
@@ -157,11 +149,9 @@ func TestHandlers_Store(t *testing.T) {
 			mockedFields: mockedFields{storage: &storage.MockStorage{}},
 			wantRespCode: http.StatusOK,
 			on: func(fields *mockedFields) {
-				fields.storage.On("Store", &internal.Metric{
-					Type:  internal.GaugeType,
-					Name:  "name",
-					Gauge: 1.1,
-				}).Return(nil)
+				fields.storage.On(
+					"Store", model.NewGauge("name", 1.1),
+				).Return(nil)
 			},
 		},
 		{
@@ -227,29 +217,19 @@ func TestHandlers_GetList(t *testing.T) {
 			name:         "not empty storage",
 			mockedFields: mockedFields{storage: &storage.MockStorage{}},
 			on: func(fields *mockedFields) {
-				fields.storage.On("GetList").Return([]internal.Metric{
-					{
-						Type:    internal.CounterType,
-						Name:    "metric1",
-						Gauge:   0,
-						Counter: 1,
-					},
-					{
-						Type:    internal.GaugeType,
-						Name:    "metric2",
-						Gauge:   1,
-						Counter: 0,
-					},
+				fields.storage.On("GetList").Return([]model.Metric{
+					*model.NewCounter("metric1", 1),
+					*model.NewGauge("metric2", 1.1),
 				}, nil)
 			},
 			wantedRespCode: http.StatusOK,
-			wantedRespBody: "type: counter, name: metric1, value: 1\ntype: gauge, name: metric2, value: 1\n",
+			wantedRespBody: "type: counter, name: metric1, value: 1\ntype: gauge, name: metric2, value: 1.1\n",
 		},
 		{
 			name:         "empty storage",
 			mockedFields: mockedFields{storage: &storage.MockStorage{}},
 			on: func(fields *mockedFields) {
-				fields.storage.On("GetList").Return([]internal.Metric{}, nil)
+				fields.storage.On("GetList").Return([]model.Metric{}, nil)
 			},
 			wantedRespCode: http.StatusOK,
 			wantedRespBody: "",

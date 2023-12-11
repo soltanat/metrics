@@ -1,72 +1,57 @@
 package storage
 
-import "github.com/soltanat/metrics/internal"
+import (
+	"github.com/soltanat/metrics/internal/model"
+	"sync"
+)
 
 type MemStorage struct {
 	gauge   map[string]float64
 	counter map[string]int64
+	mu      *sync.RWMutex
 }
 
 func NewMemStorage() *MemStorage {
 	return &MemStorage{
 		gauge:   make(map[string]float64),
 		counter: make(map[string]int64),
+		mu:      &sync.RWMutex{},
 	}
 }
 
-func (s *MemStorage) Store(metric *internal.Metric) error {
+func (s *MemStorage) Store(metric *model.Metric) error {
 	switch metric.Type {
-	case internal.CounterType:
+	case model.MetricTypeCounter:
 		s.counter[metric.Name] = metric.Counter
-	case internal.GaugeType:
+	case model.MetricTypeGauge:
 		s.gauge[metric.Name] = metric.Gauge
 	}
 	return nil
 }
 
-func (s *MemStorage) GetGauge(name string) (*internal.Metric, error) {
-	m, ok := s.gauge[name]
+func (s *MemStorage) GetGauge(name string) (*model.Metric, error) {
+	v, ok := s.gauge[name]
 	if !ok {
-		return nil, ErrMetricNotFound
+		return nil, model.ErrInvalidMetricType
 	}
-	return &internal.Metric{
-		Type:    internal.GaugeType,
-		Name:    name,
-		Gauge:   m,
-		Counter: 0,
-	}, nil
+	return model.NewGauge(name, v), nil
 }
 
-func (s *MemStorage) GetCounter(name string) (*internal.Metric, error) {
-	m, ok := s.counter[name]
+func (s *MemStorage) GetCounter(name string) (*model.Metric, error) {
+	v, ok := s.counter[name]
 	if !ok {
-		return nil, ErrMetricNotFound
+		return nil, model.ErrMetricNotFound
 	}
-	return &internal.Metric{
-		Type:    internal.CounterType,
-		Name:    name,
-		Gauge:   0,
-		Counter: m,
-	}, nil
+	return model.NewCounter(name, v), nil
 }
 
-func (s *MemStorage) GetList() ([]internal.Metric, error) {
-	var metrics []internal.Metric
+func (s *MemStorage) GetList() ([]model.Metric, error) {
+	var metrics []model.Metric
 	for k, v := range s.counter {
-		metrics = append(metrics, internal.Metric{
-			Type:    internal.CounterType,
-			Name:    k,
-			Gauge:   0,
-			Counter: v,
-		})
+		metrics = append(metrics, *model.NewCounter(k, v))
 	}
 	for k, v := range s.gauge {
-		metrics = append(metrics, internal.Metric{
-			Type:    internal.GaugeType,
-			Name:    k,
-			Gauge:   v,
-			Counter: 0,
-		})
+		metrics = append(metrics, *model.NewGauge(k, v))
 	}
 	return metrics, nil
 }

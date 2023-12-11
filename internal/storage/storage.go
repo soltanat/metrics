@@ -1,15 +1,12 @@
 package storage
 
 import (
-	"fmt"
-	"github.com/soltanat/metrics/internal"
+	"github.com/soltanat/metrics/internal/model"
 )
 
-var ErrMetricNotFound = fmt.Errorf("metric not found")
-
 type Storage interface {
-	Store(metric *internal.Metric) error
-	GetGauge(name string) (*internal.Metric, error)
-	GetCounter(name string) (*internal.Metric, error)
-	GetList() ([]internal.Metric, error)
+	Store(metric *model.Metric) error
+	GetGauge(name string) (*model.Metric, error)
+	GetCounter(name string) (*model.Metric, error)
+	GetList() ([]model.Metric, error)
 }

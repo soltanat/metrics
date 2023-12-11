@@ -1,14 +1,13 @@
 package poller
 
 import (
-	"github.com/soltanat/metrics/internal"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestNewPoller(t *testing.T) {
 	tests := []struct {
 		name string
-		//want *runtimePoller
 	}{
 		{
 			"new poller",
@@ -16,32 +15,33 @@ func TestNewPoller(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewPoller()
+			got, err := NewPoller()
+			assert.NoError(t, err)
 			if got == nil {
 				t.Errorf("new poller return nil")
 				return
 			}
-			if got.metrics == nil {
-				t.Errorf("poller metrics store is nil")
+			if got.storage == nil {
+				t.Errorf("poller metrics storage is nil")
 				return
 			}
-			if _, ok := got.metrics.Load(pollCounterMetricName); !ok {
-				t.Errorf("new poller have not metric %s", pollCounterMetricName)
+			if _, err := got.storage.GetCounter(pollCounterMetricName); err != nil {
+				assert.NoError(t, err)
 			}
-			if _, ok := got.metrics.Load(randomValueMetricName); !ok {
-				t.Errorf("new poller have not metric %s", randomValueMetricName)
+			if _, err := got.storage.GetGauge(randomValueMetricName); err != nil {
+				assert.NoError(t, err)
 			}
 		})
 	}
 }
 
 func TestPeriodicRuntimePoller_Get(t *testing.T) {
-	p := NewPoller()
-	err := p.Poll()
-	if err != nil {
-		t.Errorf("Poll error %v", err)
-	}
-	got := p.Get()
+	p, err := NewPoller()
+	assert.NoError(t, err)
+	err = p.Poll()
+	assert.NoError(t, err)
+	got, err := p.Get()
+	assert.NoError(t, err)
 	if len(got) != len(gaugeMetrics)+2 {
 		t.Errorf("partly get metric from poller")
 	}
@@ -55,23 +55,23 @@ func TestPeriodicRuntimePoller_poll(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPoller()
+			p, err := NewPoller()
+			assert.NoError(t, err)
 
-			previousMetrics := p.metrics
+			previousMetrics := p.storage
 
-			err := p.Poll()
-			if err != nil {
-				t.Errorf("Poll error %v", err)
-			}
+			err = p.Poll()
+			assert.NoError(t, err)
 
 			for key := range gaugeMetrics {
-				if _, ok := p.metrics.Load(key); !ok {
-					t.Errorf("poller not polled metric %s", key)
+				if _, err := p.storage.GetGauge(key); err != nil {
+					assert.NoError(t, err)
 				}
 			}
-			if m, ok := p.metrics.Load(pollCounterMetricName); ok {
-				if p, ok := previousMetrics.Load(pollCounterMetricName); ok {
-					if m.(*internal.Metric).Counter == p.(*internal.Metric).Counter+1 {
+			if m, err := p.storage.GetCounter(pollCounterMetricName); err == nil {
+				if p, err := previousMetrics.GetCounter(pollCounterMetricName); err != nil {
+					assert.NoError(t, err)
+					if m.Counter == p.Counter+1 {
 						t.Errorf("%s metric not incremented", pollCounterMetricName)
 					}
 				}
@@ -79,10 +79,10 @@ func TestPeriodicRuntimePoller_poll(t *testing.T) {
 				t.Errorf("%s metric not exist", pollCounterMetricName)
 			}
 
-			if m, ok := p.metrics.Load(randomValueMetricName); ok {
-				if p, ok := previousMetrics.Load(randomValueMetricName); ok {
-					if m.(*internal.Metric).Counter == p.(*internal.Metric).Counter+1 {
-						t.Errorf("%s metric not incremented", randomValueMetricName)
+			if m, err := p.storage.GetGauge(randomValueMetricName); err == nil {
+				if p, err := previousMetrics.GetGauge(randomValueMetricName); err == nil {
+					if m.Gauge != p.Gauge {
+						t.Errorf("%s metric not updated", randomValueMetricName)
 					}
 				}
 			} else {
