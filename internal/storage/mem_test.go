@@ -12,6 +12,7 @@ func TestMemStorage_StoreCounter(t *testing.T) {
 	type fields struct {
 		gauge   map[string]float64
 		counter map[string]int64
+		mu      *sync.RWMutex
 	}
 	type args struct {
 		name  string
@@ -28,6 +29,7 @@ func TestMemStorage_StoreCounter(t *testing.T) {
 			fields{
 				gauge:   make(map[string]float64),
 				counter: make(map[string]int64),
+				mu:      &sync.RWMutex{},
 			},
 			args{
 				name:  "test name",
@@ -41,6 +43,7 @@ func TestMemStorage_StoreCounter(t *testing.T) {
 			s := MemStorage{
 				gauge:   tt.fields.gauge,
 				counter: tt.fields.counter,
+				mu:      tt.fields.mu,
 			}
 			m := model.NewCounter(tt.args.name, tt.args.value)
 			if err := s.Store(m); (err != nil) != tt.wantErr {
@@ -55,6 +58,7 @@ func TestMemStorage_StoreGauge(t *testing.T) {
 	type fields struct {
 		gauge   map[string]float64
 		counter map[string]int64
+		mu      *sync.RWMutex
 	}
 	type args struct {
 		name  string
@@ -71,6 +75,7 @@ func TestMemStorage_StoreGauge(t *testing.T) {
 			fields{
 				gauge:   make(map[string]float64),
 				counter: make(map[string]int64),
+				mu:      &sync.RWMutex{},
 			},
 			args{
 				name:  "test name",
@@ -84,6 +89,7 @@ func TestMemStorage_StoreGauge(t *testing.T) {
 			s := MemStorage{
 				gauge:   tt.fields.gauge,
 				counter: tt.fields.counter,
+				mu:      tt.fields.mu,
 			}
 			m := model.NewGauge(tt.args.name, tt.args.value)
 			if err := s.Store(m); (err != nil) != tt.wantErr {
