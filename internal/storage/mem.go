@@ -20,17 +20,21 @@ func NewMemStorage() *MemStorage {
 }
 
 func (s *MemStorage) Store(metric *model.Metric) error {
+	s.mu.Lock()
 	switch metric.Type {
 	case model.MetricTypeCounter:
 		s.counter[metric.Name] = metric.Counter
 	case model.MetricTypeGauge:
 		s.gauge[metric.Name] = metric.Gauge
 	}
+	s.mu.Unlock()
 	return nil
 }
 
 func (s *MemStorage) GetGauge(name string) (*model.Metric, error) {
+	s.mu.RLock()
 	v, ok := s.gauge[name]
+	s.mu.RUnlock()
 	if !ok {
 		return nil, model.ErrMetricNotFound
 	}
@@ -38,7 +42,9 @@ func (s *MemStorage) GetGauge(name string) (*model.Metric, error) {
 }
 
 func (s *MemStorage) GetCounter(name string) (*model.Metric, error) {
+	s.mu.RLock()
 	v, ok := s.counter[name]
+	s.mu.RUnlock()
 	if !ok {
 		return nil, model.ErrMetricNotFound
 	}
@@ -47,11 +53,13 @@ func (s *MemStorage) GetCounter(name string) (*model.Metric, error) {
 
 func (s *MemStorage) GetList() ([]model.Metric, error) {
 	var metrics []model.Metric
+	s.mu.RLock()
 	for k, v := range s.counter {
 		metrics = append(metrics, *model.NewCounter(k, v))
 	}
 	for k, v := range s.gauge {
 		metrics = append(metrics, *model.NewGauge(k, v))
 	}
+	s.mu.RUnlock()
 	return metrics, nil
 }

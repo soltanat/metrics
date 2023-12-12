@@ -77,12 +77,20 @@ func (p *RuntimePoller) Poll() error {
 		return err
 	} else {
 		m.SetGauge(rand.Float64())
+		err := p.storage.Store(m)
+		if err != nil {
+			return err
+		}
 	}
 
 	if m, err := p.storage.GetCounter(pollCounterMetricName); err != nil {
 		return err
 	} else {
 		m.IncCounter()
+		err := p.storage.Store(m)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

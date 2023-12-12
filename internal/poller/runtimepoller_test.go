@@ -58,7 +58,10 @@ func TestPeriodicRuntimePoller_poll(t *testing.T) {
 			p, err := NewPoller()
 			assert.NoError(t, err)
 
-			previousMetrics := p.storage
+			prevCounter, err := p.storage.GetCounter(pollCounterMetricName)
+			assert.NoError(t, err)
+			prevRandom, err := p.storage.GetGauge(randomValueMetricName)
+			assert.NoError(t, err)
 
 			err = p.Poll()
 			assert.NoError(t, err)
@@ -68,26 +71,13 @@ func TestPeriodicRuntimePoller_poll(t *testing.T) {
 					assert.NoError(t, err)
 				}
 			}
-			if m, err := p.storage.GetCounter(pollCounterMetricName); err == nil {
-				if p, err := previousMetrics.GetCounter(pollCounterMetricName); err != nil {
-					assert.NoError(t, err)
-					if m.Counter == p.Counter+1 {
-						t.Errorf("%s metric not incremented", pollCounterMetricName)
-					}
-				}
-			} else {
-				t.Errorf("%s metric not exist", pollCounterMetricName)
-			}
+			m, err := p.storage.GetCounter(pollCounterMetricName)
+			assert.NoError(t, err)
+			assert.Equal(t, m.Counter, prevCounter.Counter+1)
 
-			if m, err := p.storage.GetGauge(randomValueMetricName); err == nil {
-				if p, err := previousMetrics.GetGauge(randomValueMetricName); err == nil {
-					if m.Gauge != p.Gauge {
-						t.Errorf("%s metric not updated", randomValueMetricName)
-					}
-				}
-			} else {
-				t.Errorf("%s not exist", randomValueMetricName)
-			}
+			m, err = p.storage.GetGauge(randomValueMetricName)
+			assert.NoError(t, err)
+			assert.NotEqual(t, m.Gauge, prevRandom.Gauge)
 		})
 	}
 }
