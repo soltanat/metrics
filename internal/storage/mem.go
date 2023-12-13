@@ -52,8 +52,8 @@ func (s *MemStorage) GetCounter(name string) (*model.Metric, error) {
 }
 
 func (s *MemStorage) GetList() ([]model.Metric, error) {
-	var metrics []model.Metric
 	s.mu.RLock()
+	metrics := make([]model.Metric, 0, len(s.counter)+len(s.gauge))
 	for k, v := range s.counter {
 		metrics = append(metrics, *model.NewCounter(k, v))
 	}
