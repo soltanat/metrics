@@ -192,7 +192,7 @@ func TestMemStorage_GetList(t *testing.T) {
 				mu:      tt.fields.mu,
 			}
 			got, err := s.GetList()
-			if !tt.wantErr(t, err, fmt.Sprintf("GetList()")) {
+			if !tt.wantErr(t, err, "GetList()") {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "GetList()")
