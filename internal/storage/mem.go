@@ -1,8 +1,9 @@
 package storage
 
 import (
-	"github.com/soltanat/metrics/internal/model"
 	"sync"
+
+	"github.com/soltanat/metrics/internal/model"
 )
 
 type MemStorage struct {
@@ -21,13 +22,14 @@ func NewMemStorage() *MemStorage {
 
 func (s *MemStorage) Store(metric *model.Metric) error {
 	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	switch metric.Type {
 	case model.MetricTypeCounter:
 		s.counter[metric.Name] = metric.Counter
 	case model.MetricTypeGauge:
 		s.gauge[metric.Name] = metric.Gauge
 	}
-	s.mu.Unlock()
 	return nil
 }
 

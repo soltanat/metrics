@@ -1,15 +1,16 @@
 package handler
 
 import (
-	"github.com/go-resty/resty/v2"
-	"github.com/soltanat/metrics/internal/model"
-	"github.com/soltanat/metrics/internal/storage"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-
 	"testing"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/soltanat/metrics/internal/model"
+	"github.com/soltanat/metrics/internal/storage"
 )
 
 func TestHandlers_Get(t *testing.T) {

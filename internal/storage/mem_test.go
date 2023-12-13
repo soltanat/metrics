@@ -2,11 +2,13 @@ package storage
 
 import (
 	"fmt"
-	"github.com/soltanat/metrics/internal/model"
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/soltanat/metrics/internal/model"
 )
 
 func TestNewMemStorage(t *testing.T) {

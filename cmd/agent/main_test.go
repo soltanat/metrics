@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
-	"github.com/soltanat/metrics/internal/model"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
+	"github.com/soltanat/metrics/internal/model"
 )
 
 type PollerMock struct {

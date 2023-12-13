@@ -3,16 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/soltanat/metrics/internal"
-	"github.com/soltanat/metrics/internal/client"
-	"github.com/soltanat/metrics/internal/poller"
-	"github.com/soltanat/metrics/internal/reporter"
 	"log"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/soltanat/metrics/internal"
+	"github.com/soltanat/metrics/internal/client"
+	"github.com/soltanat/metrics/internal/poller"
+	"github.com/soltanat/metrics/internal/reporter"
 )
 
 func Run(

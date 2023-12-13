@@ -2,10 +2,11 @@ package client
 
 import (
 	"fmt"
-	"github.com/soltanat/metrics/internal/model"
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/soltanat/metrics/internal/model"
 )
 
 const (

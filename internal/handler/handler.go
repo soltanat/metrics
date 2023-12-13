@@ -2,11 +2,13 @@ package handler
 
 import (
 	"errors"
+	"strconv"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
+
 	"github.com/soltanat/metrics/internal/model"
 	"github.com/soltanat/metrics/internal/storage"
-	"strconv"
 )
 
 type Handlers struct {

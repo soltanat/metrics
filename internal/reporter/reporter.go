@@ -6,25 +6,25 @@ import (
 )
 
 type Reporter struct {
-	Poller internal.Poll
-	Client *client.Client
+	poller internal.Poll
+	client *client.Client
 }
 
 func New(poller internal.Poll, client *client.Client) *Reporter {
 	reporter := &Reporter{
-		Poller: poller,
-		Client: client,
+		poller: poller,
+		client: client,
 	}
 	return reporter
 }
 
 func (w *Reporter) Report() error {
-	metrics, err := w.Poller.Get()
+	metrics, err := w.poller.Get()
 	if err != nil {
 		return err
 	}
 	for _, m := range metrics {
-		err := w.Client.Send(&m)
+		err := w.client.Send(&m)
 		if err != nil {
 			return err
 		}

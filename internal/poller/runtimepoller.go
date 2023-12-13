@@ -2,11 +2,12 @@ package poller
 
 import (
 	"fmt"
-	"github.com/soltanat/metrics/internal/model"
-	"github.com/soltanat/metrics/internal/storage"
 	"math/rand"
 	"reflect"
 	"runtime"
+
+	"github.com/soltanat/metrics/internal/model"
+	"github.com/soltanat/metrics/internal/storage"
 )
 
 const (

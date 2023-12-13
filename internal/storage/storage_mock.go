@@ -1,8 +1,9 @@
 package storage
 
 import (
-	"github.com/soltanat/metrics/internal/model"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/soltanat/metrics/internal/model"
 )
 
 type MockStorage struct {
