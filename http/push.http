@@ -1,0 +1,26 @@
+###
+POST http://{{address}}/update/gauge/metric_name/1.1
+Content-Type: text/plain
+
+{}
+
+###
+POST http://{{address}}/update/counter/metric_name/1
+Content-Type: text/plain
+
+{}
+
+
+### 404
+POST http://{{address}}/update/gauge/
+Content-Type: text/plain
+
+{}
+
+###
+POST http://{{address}}/update/unknown/testCounter/100
+
+{}
+
+###
+GET http://{{address}}/value/gauge/testUnknown133
