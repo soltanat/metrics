@@ -2,6 +2,8 @@ package handler
 
 import (
 	"errors"
+	"github.com/rs/zerolog"
+	"net/http"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -13,10 +15,11 @@ import (
 
 type Handlers struct {
 	storage storage.Storage
+	logger  zerolog.Logger
 }
 
 func New(s storage.Storage) *Handlers {
-	return &Handlers{storage: s}
+	return &Handlers{storage: s, logger: logger.Get()}
 }
 
 func (h *Handlers) GetList(c echo.Context) error {
@@ -60,7 +63,6 @@ func (h *Handlers) Get(c echo.Context) error {
 	_, _ = c.Response().Write([]byte(metric.ValueAsString()))
 
 	return nil
-
 }
 
 func (h *Handlers) Store(c echo.Context) error {
@@ -111,4 +113,96 @@ func (h *Handlers) Store(c echo.Context) error {
 	}
 
 	return nil
+}
+
+func (h *Handlers) StoreMetrics(c echo.Context) error {
+	var metrics Metrics
+	if err := c.Bind(&metrics); err != nil {
+		h.logger.Error().Msgf("Error binding metrics: %s", err)
+		return echo.ErrBadRequest
+	}
+
+	var metric *model.Metric
+
+	metricType, err := model.ParseMetricType(metrics.MType)
+	if err != nil {
+		h.logger.Error().Err(err)
+		return echo.ErrBadRequest
+	}
+
+	switch metricType {
+	case model.MetricTypeGauge:
+		if metrics.Value == nil {
+			h.logger.Error().Msg("Missing value for gauge metric")
+			return echo.ErrBadRequest
+		}
+		metric = model.NewGauge(metrics.ID, *metrics.Value)
+	case model.MetricTypeCounter:
+		if metrics.Delta == nil {
+			h.logger.Error().Msg("Missing delta for counter metric")
+			return echo.ErrBadRequest
+		}
+		m, err := h.storage.GetCounter(metrics.ID)
+		if err != nil {
+			if !errors.Is(err, model.ErrMetricNotFound) {
+				h.logger.Error().Msgf("Error getting counter metric: %s", err)
+				return echo.ErrBadRequest
+			}
+			m = model.NewCounter(metrics.ID, 0)
+		}
+		m.AddCounter(*metrics.Delta)
+		metric = m
+	default:
+		h.logger.Error().Msg("Unknown metric type")
+		return echo.ErrBadRequest
+	}
+
+	if err := h.storage.Store(metric); err != nil {
+		h.logger.Error().Msgf("Error storing metric: %s", err)
+		return echo.ErrInternalServerError
+	}
+
+	h.logger.Debug().Msg("Metrics stored successfully")
+
+	return c.NoContent(http.StatusOK)
+}
+
+func (h *Handlers) Value(c echo.Context) error {
+	var m Metrics
+	if err := c.Bind(&m); err != nil {
+		return echo.ErrBadRequest
+	}
+
+	metricType, err := model.ParseMetricType(m.MType)
+	if err != nil {
+		return echo.ErrBadRequest
+	}
+
+	var metric *model.Metric
+	metricMap := map[model.MetricType]func(string) (*model.Metric, error){
+		model.MetricTypeGauge:   h.storage.GetGauge,
+		model.MetricTypeCounter: h.storage.GetCounter,
+	}
+
+	metricFunc, ok := metricMap[metricType]
+	if !ok {
+		return echo.ErrBadRequest
+	}
+
+	metric, err = metricFunc(m.ID)
+	if err != nil {
+		if errors.Is(err, model.ErrMetricNotFound) {
+			return echo.ErrNotFound
+		}
+		return echo.ErrInternalServerError
+	}
+
+	switch metricType {
+	case model.MetricTypeGauge:
+		m.Value = &metric.Gauge
+	case model.MetricTypeCounter:
+		m.Delta = &metric.Counter
+	}
+
+	return c.JSON(http.StatusOK, m)
 }
