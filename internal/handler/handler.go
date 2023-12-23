@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
 
+	"github.com/soltanat/metrics/internal/logger"
 	"github.com/soltanat/metrics/internal/model"
 	"github.com/soltanat/metrics/internal/storage"
 )
@@ -31,12 +31,14 @@ func (h *Handlers) GetList(c echo.Context) error {
 }
 
 func (h *Handlers) Get(c echo.Context) error {
+	l := logger.Get()
+
 	metricTypeRaw := c.Param("metricType")
 	name := c.Param("metricName")
 
 	metricType, err := model.ParseMetricType(metricTypeRaw)
 	if err != nil {
-		log.Error(err)
+		l.Error().Err(err)
 		return echo.ErrBadRequest
 	}
 
@@ -62,6 +64,8 @@ func (h *Handlers) Get(c echo.Context) error {
 }
 
 func (h *Handlers) Store(c echo.Context) error {
+	l := logger.Get()
+
 	metricTypeRaw := c.Param("metricType")
 	name := c.Param("metricName")
 	valueRaw := c.Param("metricValue")
@@ -70,7 +74,7 @@ func (h *Handlers) Store(c echo.Context) error {
 
 	metricType, err := model.ParseMetricType(metricTypeRaw)
 	if err != nil {
-		log.Error(err)
+		l.Error().Err(err)
 		return echo.ErrBadRequest
 	}
 	switch metricType {
@@ -102,7 +106,7 @@ func (h *Handlers) Store(c echo.Context) error {
 
 	err = h.storage.Store(metric)
 	if err != nil {
-		log.Error(err)
+		l.Error().Err(err)
 		return echo.ErrInternalServerError
 	}
 

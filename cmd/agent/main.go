@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/soltanat/metrics/internal"
 	"github.com/soltanat/metrics/internal/client"
+	"github.com/soltanat/metrics/internal/logger"
 	"github.com/soltanat/metrics/internal/poller"
 	"github.com/soltanat/metrics/internal/reporter"
 )
@@ -19,6 +19,8 @@ import (
 func Run(
 	ctx context.Context, pollInterval, reportInterval time.Duration, poller internal.Poll, reporter internal.Reporter,
 ) {
+	l := logger.Get()
+
 	ctx, cancel := context.WithCancel(ctx)
 
 	var wg sync.WaitGroup
@@ -28,14 +30,14 @@ func Run(
 		defer wg.Done()
 		exit := make(chan os.Signal, 1)
 		signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
-		log.Printf("runned gs goroutine")
+		l.Debug().Msg("ran gs goroutine")
 		select {
 		case <-exit:
-			log.Printf("gs receive signal")
+			l.Debug().Msg("gs receive signal")
 			cancel()
 			return
 		case <-ctx.Done():
-			log.Printf("gs get context.Done")
+			l.Debug().Msg("gs got context.Done")
 			cancel()
 			return
 		}
@@ -45,20 +47,20 @@ func Run(
 	go func() {
 		defer wg.Done()
 		ticker := time.NewTicker(pollInterval)
-		log.Printf("runned poller goroutine")
+		l.Debug().Msg("ran poller goroutine")
 		for {
 			select {
 			case <-ticker.C:
-				log.Printf("call poller")
+				l.Debug().Msg("call poller")
 				err := poller.Poll()
 				if err != nil {
-					log.Printf("poller error: %v", err)
+					l.Error().Err(err).Msg("poller error")
 					cancel()
 					return
 				}
-				log.Printf("polled metrics")
+				l.Debug().Msg("polled metrics")
 			case <-ctx.Done():
-				log.Printf("poller get context.Done")
+				l.Debug().Msg("poller got context.Done")
 				ticker.Stop()
 				return
 			}
@@ -69,20 +71,20 @@ func Run(
 	go func() {
 		defer wg.Done()
 		ticker := time.NewTicker(reportInterval)
-		log.Printf("runned reporter goroutine")
+		l.Debug().Msg("ran reporter goroutine")
 		for {
 			select {
 			case <-ticker.C:
-				log.Printf("call reporter")
+				l.Debug().Msg("call reporter")
 				err := reporter.Report()
 				if err != nil {
-					log.Printf("reporter error: %v", err)
+					l.Error().Err(err).Msg("reporter error")
 					cancel()
 					return
 				}
-				log.Printf("metrics reported")
+				l.Debug().Msg("metrics reported")
 			case <-ctx.Done():
-				log.Printf("reporter get context.Done")
+				l.Debug().Msg("reporter got context.Done")
 				ticker.Stop()
 				return
 			}
@@ -93,11 +95,13 @@ func Run(
 }
 
 func main() {
+	l := logger.Get()
+
 	parseFlags()
 
 	pollerInst, err := poller.NewPoller()
 	if err != nil {
-		log.Print(err)
+		l.Fatal().Err(err)
 		return
 	}
 	reporterInst := reporter.New(pollerInst, client.New(fmt.Sprintf("http://%s", flagAddr)))
