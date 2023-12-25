@@ -15,7 +15,7 @@ import (
 const (
 	gaugeEndpointPrefix   = "/update/gauge"
 	counterEndpointPrefix = "/update/counter"
-	updateEndpointPrefix  = "/update/"
+	updateEndpointPrefix  = "/update"
 )
 
 var errValidationName = fmt.Errorf("min name len 1")
