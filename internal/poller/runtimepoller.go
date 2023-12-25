@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	pollCounterMetricName = "PollCounter"
+	pollCounterMetricName = "PollCount"
 	randomValueMetricName = "RandomValue"
 )
 

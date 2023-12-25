@@ -79,8 +79,9 @@ func Run(
 				err := reporter.Report()
 				if err != nil {
 					l.Error().Err(err).Msg("reporter error")
+				} else {
+					l.Info().Msg("metrics reported")
 				}
-				l.Info().Msg("metrics reported")
 			case <-ctx.Done():
 				l.Info().Msg("reporter got context.Done")
 				ticker.Stop()

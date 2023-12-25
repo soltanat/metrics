@@ -42,6 +42,6 @@ POST http://{{address}}/value
 Content-Type: application/json
 
 {
-  "id": "test",
+  "id": "PollCount",
   "type": "counter"
 }
