@@ -2,9 +2,10 @@ package main
 
 import (
 	"flag"
-	"log"
 
 	"github.com/caarlos0/env/v6"
+
+	"github.com/soltanat/metrics/internal/logger"
 )
 
 var flagAddr string
@@ -14,13 +15,15 @@ type Config struct {
 }
 
 func parseFlags() {
+	l := logger.Get()
+
 	flag.StringVar(&flagAddr, "a", "localhost:8080", "address and port metrics http server")
 	flag.Parse()
 
 	var cfg Config
 	err := env.Parse(&cfg)
 	if err != nil {
-		log.Fatal(err)
+		l.Fatal().Err(err)
 	}
 
 	if cfg.Addr != "" {
