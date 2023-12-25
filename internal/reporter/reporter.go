@@ -24,7 +24,7 @@ func (w *Reporter) Report() error {
 		return err
 	}
 	for _, m := range metrics {
-		err := w.client.Send(&m)
+		err := w.client.Update(&m)
 		if err != nil {
 			return err
 		}

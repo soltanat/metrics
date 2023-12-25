@@ -1,7 +1,10 @@
 package client
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"github.com/soltanat/metrics/internal/handler"
 	"io"
 	"net/http"
 	"net/url"
@@ -12,6 +15,7 @@ import (
 const (
 	gaugeEndpointPrefix   = "/update/gauge"
 	counterEndpointPrefix = "/update/counter"
+	updateEndpointPrefix  = "/update"
 )
 
 var errValidationName = fmt.Errorf("min name len 1")
@@ -60,11 +64,43 @@ func (c *Client) Send(m *model.Metric) error {
 		)
 	}
 
-	return c.makeRequest(reqURL)
+	return c.makeRequest(reqURL, http.NoBody)
 }
 
-func (c *Client) makeRequest(url string) error {
-	resp, err := http.Post(url, "text/plain", http.NoBody)
+func (c *Client) Update(m *model.Metric) error {
+	if m.Name == "" {
+		return errValidationName
+	}
+	reqURL, _ := url.JoinPath(c.address, updateEndpointPrefix)
+	var bodyMessage handler.Metrics
+	switch m.Type {
+	case model.MetricTypeGauge:
+		bodyMessage = handler.Metrics{
+			ID:    m.Name,
+			MType: m.Type.String(),
+			Delta: nil,
+			Value: &m.Gauge,
+		}
+	case model.MetricTypeCounter:
+		bodyMessage = handler.Metrics{
+			ID:    m.Name,
+			MType: m.Type.String(),
+			Delta: &m.Counter,
+			Value: nil,
+		}
+	}
+
+	body := new(bytes.Buffer)
+	err := json.NewEncoder(body).Encode(bodyMessage)
+	if err != nil {
+		return err
+	}
+
+	return c.makeRequest(reqURL, body)
+}
+
+func (c *Client) makeRequest(url string, body io.Reader) error {
+	resp, err := http.Post(url, "text/plain", body)
 	if err != nil {
 		return errHTTP{Err: err}
 	}
