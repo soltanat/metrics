@@ -24,3 +24,14 @@ POST http://{{address}}/update/unknown/testCounter/100
 
 ###
 GET http://{{address}}/value/gauge/testUnknown133
+
+
+###
+POST http://{{address}}/update/
+Content-Type: application/json
+
+{
+  "id": "test",
+  "type": "counter",
+  "Delta": 101
+}
