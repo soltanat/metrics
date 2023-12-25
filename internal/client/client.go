@@ -64,7 +64,7 @@ func (c *Client) Send(m *model.Metric) error {
 		)
 	}
 
-	return c.makeRequest(reqURL, http.NoBody)
+	return c.makeRequest(reqURL, "text/plain", http.NoBody)
 }
 
 func (c *Client) Update(m *model.Metric) error {
@@ -96,11 +96,11 @@ func (c *Client) Update(m *model.Metric) error {
 		return err
 	}
 
-	return c.makeRequest(reqURL, body)
+	return c.makeRequest(reqURL, "application/json", body)
 }
 
-func (c *Client) makeRequest(url string, body io.Reader) error {
-	resp, err := http.Post(url, "text/plain", body)
+func (c *Client) makeRequest(url string, contentType string, body io.Reader) error {
+	resp, err := http.Post(url, contentType, body)
 	if err != nil {
 		return errHTTP{Err: err}
 	}

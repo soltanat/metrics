@@ -126,7 +126,7 @@ func (h *Handlers) StoreMetrics(c echo.Context) error {
 
 	metricType, err := model.ParseMetricType(metrics.MType)
 	if err != nil {
-		h.logger.Error().Err(err)
+		h.logger.Error().Err(err).Msg("Error parsing metric type")
 		return echo.ErrBadRequest
 	}
 
@@ -162,7 +162,7 @@ func (h *Handlers) StoreMetrics(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	h.logger.Debug().Msg("Metrics stored successfully")
+	h.logger.Info().Msg("Metrics stored successfully")
 
 	return c.NoContent(http.StatusOK)
 }
