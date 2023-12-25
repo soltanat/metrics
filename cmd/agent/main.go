@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -103,7 +104,14 @@ func main() {
 		l.Fatal().Err(err)
 		return
 	}
-	reporterInst := reporter.New(pollerInst, client.New(fmt.Sprintf("http://%s", flagAddr)))
+
+	addr := fmt.Sprintf("http://%s", flagAddr)
+	transport := http.DefaultTransport
+	transport = &client.GzipTransport{Transport: transport}
+	transport = &client.LoggingTransport{Transport: transport}
+	cli := client.New(addr, transport)
+
+	reporterInst := reporter.New(pollerInst, cli)
 	Run(
 		context.Background(),
 		time.Second*time.Duration(flagPollInterval),

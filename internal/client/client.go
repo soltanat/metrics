@@ -2,15 +2,13 @@ package client
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"github.com/soltanat/metrics/internal/handler"
+	"github.com/soltanat/metrics/internal/model"
 	"io"
 	"net/http"
 	"net/url"
-
-	"github.com/soltanat/metrics/internal/model"
 )
 
 const (
@@ -40,11 +38,13 @@ func (e errUnexpectedResponse) Error() string {
 
 type Client struct {
 	address string
+	client  *http.Client
 }
 
-func New(address string) *Client {
+func New(address string, transport http.RoundTripper) *Client {
 	return &Client{
-		address,
+		address: address,
+		client:  &http.Client{Transport: transport},
 	}
 }
 
@@ -72,23 +72,19 @@ func (c *Client) Update(m *model.Metric) error {
 	if m.Name == "" {
 		return errValidationName
 	}
+
 	reqURL, _ := url.JoinPath(c.address, updateEndpointPrefix)
-	var bodyMessage handler.Metrics
+
+	bodyMessage := handler.Metrics{
+		ID:    m.Name,
+		MType: m.Type.String(),
+	}
+
 	switch m.Type {
 	case model.MetricTypeGauge:
-		bodyMessage = handler.Metrics{
-			ID:    m.Name,
-			MType: m.Type.String(),
-			Delta: nil,
-			Value: &m.Gauge,
-		}
+		bodyMessage.Value = &m.Gauge
 	case model.MetricTypeCounter:
-		bodyMessage = handler.Metrics{
-			ID:    m.Name,
-			MType: m.Type.String(),
-			Delta: &m.Counter,
-			Value: nil,
-		}
+		bodyMessage.Delta = &m.Counter
 	}
 
 	body := new(bytes.Buffer)
@@ -101,25 +97,12 @@ func (c *Client) Update(m *model.Metric) error {
 }
 
 func (c *Client) makeRequest(url string, contentType string, body io.Reader) error {
-	var buf bytes.Buffer
-	g := gzip.NewWriter(&buf)
-	_, err := io.Copy(g, body)
-	if err != nil {
-		return fmt.Errorf("gzip error: %v", err)
-	}
-	if err := g.Close(); err != nil {
-		return fmt.Errorf("gzip close error: %v", err)
-	}
-	body = bytes.NewReader(buf.Bytes())
-
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return fmt.Errorf("create request error: %v", err)
 	}
 	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Content-Encoding", "gzip")
-	req.Header.Set("Accept-Encoding", "gzip")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return errHTTP{Err: fmt.Errorf("request error: %v", err)}
 	}

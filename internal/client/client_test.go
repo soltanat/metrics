@@ -70,7 +70,7 @@ func TestMetricsClient_Send(t *testing.T) {
 			}))
 			defer server.Close()
 
-			api := Client{server.URL}
+			api := Client{server.URL, http.DefaultClient}
 			err := api.Send(tt.metric)
 
 			assert.NoError(t, err)
@@ -90,7 +90,7 @@ func TestMetricsClient_Send_IncorrectName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			api := Client{"http://localhost:8080"}
+			api := Client{"http://localhost:8080", http.DefaultClient}
 			err := api.Send(tt.metric)
 			assert.Error(t, err, errValidationName)
 		})
@@ -115,7 +115,7 @@ func TestMetricsClient_Send_ServerErrors(t *testing.T) {
 			}))
 			defer server.Close()
 
-			api := Client{server.URL}
+			api := Client{server.URL, http.DefaultClient}
 			err := api.Send(tt.metric)
 
 			assert.Error(t, err, errUnexpectedResponse{
@@ -139,7 +139,7 @@ func TestMetricsClient_Send_AddressError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			api := Client{"http://bad_address"}
+			api := Client{"http://bad_address", http.DefaultClient}
 			err := api.Send(tt.metric)
 
 			var expectedErr errHTTP
@@ -151,6 +151,7 @@ func TestMetricsClient_Send_AddressError(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	c := &Client{
 		address: "http://example.com",
+		client:  http.DefaultClient,
 	}
 
 	tests := []struct {
