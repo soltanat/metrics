@@ -14,7 +14,6 @@ func SetupRoutes(h *Handlers) *echo.Echo {
 	e := echo.New()
 
 	e.HideBanner = true
-	e.HidePort = true
 
 	e.Logger = lecho.New(l)
 
