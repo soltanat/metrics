@@ -15,7 +15,7 @@ import (
 const (
 	gaugeEndpointPrefix   = "/update/gauge"
 	counterEndpointPrefix = "/update/counter"
-	updateEndpointPrefix  = "/update"
+	updateEndpointPrefix  = "/update123"
 )
 
 var errValidationName = fmt.Errorf("min name len 1")
@@ -107,11 +107,11 @@ func (c *Client) makeRequest(url string, contentType string, body io.Reader) err
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return err
+			return fmt.Errorf("read body error: %v, status code: %d", err, resp.StatusCode)
 		}
 		err = resp.Body.Close()
 		if err != nil {
-			return fmt.Errorf("close body error: %v", err)
+			return fmt.Errorf("close body error: %v, status code: %d", err, resp.StatusCode)
 		}
 		return errUnexpectedResponse{
 			StatusCode: resp.StatusCode,
