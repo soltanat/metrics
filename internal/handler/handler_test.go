@@ -395,7 +395,7 @@ func TestHandlers_StoreMetrics(t *testing.T) {
 			resp, err := client.R().
 				SetHeader("Content-Type", "application/json").
 				SetBody(tc.metrics).
-				Post(server.URL + "/update")
+				Post(server.URL + "/update/")
 			assert.NoError(t, err)
 			assert.Equal(t, tc.statusCode, resp.StatusCode())
 
@@ -481,7 +481,7 @@ func TestHandlers_Value(t *testing.T) {
 			resp, err := client.R().
 				SetHeader("Content-Type", "application/json").
 				SetBody(test.requestBody).
-				Post(server.URL + "/value")
+				Post(server.URL + "/value/")
 
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedStatus, resp.StatusCode())
