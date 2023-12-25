@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -143,6 +144,82 @@ func TestMetricsClient_Send_AddressError(t *testing.T) {
 
 			var expectedErr errHTTP
 			assert.ErrorAs(t, err, &expectedErr)
+		})
+	}
+}
+
+func TestUpdate(t *testing.T) {
+	c := &Client{
+		address: "http://example.com",
+	}
+
+	tests := []struct {
+		name            string
+		m               *model.Metric
+		expectedErr     error
+		expectedBody    string
+		expectedReqBody string
+	}{
+		{
+			name: "Valid Gauge Metric",
+			m: &model.Metric{
+				Name:  "metric1",
+				Type:  model.MetricTypeGauge,
+				Gauge: 1.5,
+			},
+			expectedErr:  nil,
+			expectedBody: `{"id":"metric1","type":"gauge","value":1.5}` + "\n",
+		},
+		{
+			name: "Valid Counter Metric",
+			m: &model.Metric{
+				Name:    "metric2",
+				Type:    model.MetricTypeCounter,
+				Counter: 10,
+			},
+			expectedErr:  nil,
+			expectedBody: `{"id":"metric2","type":"counter","delta":10}` + "\n",
+		},
+		{
+			name: "Invalid Metric (Empty Name)",
+			m: &model.Metric{
+				Name:  "",
+				Type:  model.MetricTypeGauge,
+				Gauge: 1.5,
+			},
+			expectedErr:  errValidationName,
+			expectedBody: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				reqBody, _ := io.ReadAll(req.Body)
+				defer func(Body io.ReadCloser) {
+					err := Body.Close()
+					if err != nil {
+						t.Errorf("Error closing request body: %v", err)
+					}
+				}(req.Body)
+
+				assert.Equal(t, tt.expectedBody, string(reqBody), "Expected request body: %s", tt.expectedReqBody)
+
+				if tt.name == "Server Error" {
+					rw.WriteHeader(http.StatusInternalServerError)
+					_, _ = rw.Write([]byte("error"))
+				}
+			}))
+			defer server.Close()
+
+			c.address = server.URL
+
+			err := c.Update(tt.m)
+			if tt.expectedErr != nil {
+				assert.Error(t, err, tt.expectedErr, "Expected error: %v", tt.expectedErr)
+			} else {
+				assert.NoError(t, err, "Expected no error")
+			}
 		})
 	}
 }
