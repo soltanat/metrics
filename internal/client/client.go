@@ -15,7 +15,7 @@ import (
 const (
 	gaugeEndpointPrefix   = "/update/gauge"
 	counterEndpointPrefix = "/update/counter"
-	updateEndpointPrefix  = "/update123"
+	updateEndpointPrefix  = "/update"
 )
 
 var errValidationName = fmt.Errorf("min name len 1")
@@ -102,7 +102,7 @@ func (c *Client) Update(m *model.Metric) error {
 func (c *Client) makeRequest(url string, contentType string, body io.Reader) error {
 	resp, err := http.Post(url, contentType, body)
 	if err != nil {
-		return errHTTP{Err: err}
+		return errHTTP{Err: fmt.Errorf("request error: %v", err)}
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
