@@ -19,6 +19,8 @@ func SetupRoutes(h *Handlers) *echo.Echo {
 
 	e.Pre(middleware.AddTrailingSlash())
 
+	e.Use(middleware.Decompress())
+	e.Use(middleware.Gzip())
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:          true,
 		LogStatus:       true,

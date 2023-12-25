@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"github.com/soltanat/metrics/internal/handler"
@@ -100,7 +101,25 @@ func (c *Client) Update(m *model.Metric) error {
 }
 
 func (c *Client) makeRequest(url string, contentType string, body io.Reader) error {
-	resp, err := http.Post(url, contentType, body)
+	var buf bytes.Buffer
+	g := gzip.NewWriter(&buf)
+	_, err := io.Copy(g, body)
+	if err != nil {
+		return fmt.Errorf("gzip error: %v", err)
+	}
+	if err := g.Close(); err != nil {
+		return fmt.Errorf("gzip close error: %v", err)
+	}
+	body = bytes.NewReader(buf.Bytes())
+
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return fmt.Errorf("create request error: %v", err)
+	}
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("Accept-Encoding", "gzip")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return errHTTP{Err: fmt.Errorf("request error: %v", err)}
 	}
