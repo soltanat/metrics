@@ -43,7 +43,7 @@ type LoggingTransport struct {
 func (t *LoggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	start := time.Now()
 	resp, err := t.Transport.RoundTrip(req)
-	latency := time.Now().Sub(start)
+	latency := time.Since(start)
 
 	l := logger.Get()
 

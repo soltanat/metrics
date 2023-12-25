@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/ziflex/lecho/v3"
+	"strings"
 
 	"github.com/soltanat/metrics/internal/logger"
 )
@@ -20,7 +21,20 @@ func SetupRoutes(h *Handlers) *echo.Echo {
 	e.Pre(middleware.AddTrailingSlash())
 
 	e.Use(middleware.Decompress())
-	e.Use(middleware.Gzip())
+	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
+		Skipper: func(c echo.Context) bool {
+			ct := c.Request().Header.Get("Content-Type")
+			if strings.Contains("application/json", ct) {
+				return true
+			}
+			if strings.Contains("text/plain", ct) {
+				return true
+			}
+			return false
+		},
+		Level:     -1,
+		MinLength: 0,
+	}))
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:          true,
 		LogStatus:       true,
