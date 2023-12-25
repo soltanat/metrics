@@ -18,6 +18,8 @@ func SetupRoutes(h *Handlers) *echo.Echo {
 
 	e.Logger = lecho.New(l)
 
+	e.Pre(middleware.AddTrailingSlash())
+
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:          true,
 		LogStatus:       true,

@@ -33,5 +33,15 @@ Content-Type: application/json
 {
   "id": "test",
   "type": "counter",
-  "Delta": 101
+  "delta": 101
+}
+
+
+###
+POST http://{{address}}/value
+Content-Type: application/json
+
+{
+  "id": "test",
+  "type": "counter"
 }
