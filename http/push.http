@@ -45,3 +45,14 @@ Content-Type: application/json
   "id": "PollCount",
   "type": "counter"
 }
+
+###
+GET http://{{address}}/
+Accept: html/text
+Accept-Encoding: gzip
+
+
+###
+GET http://{{address}}/
+Accept: text/plain
+Accept-Encoding: gzip

@@ -27,9 +27,12 @@ func (h *Handlers) GetList(c echo.Context) error {
 	if err != nil {
 		return echo.ErrInternalServerError
 	}
+
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
 	for _, m := range metrics {
 		_, _ = c.Response().Write([]byte(m.AsString() + "\n"))
 	}
+
 	return nil
 }
 
