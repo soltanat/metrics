@@ -25,12 +25,12 @@ func SetupRoutes(h *Handlers) *echo.Echo {
 		Skipper: func(c echo.Context) bool {
 			ct := c.Request().Header.Get("Content-Type")
 			if strings.Contains("application/json", ct) {
-				return true
+				return false
 			}
 			if strings.Contains("text/plain", ct) {
-				return true
+				return false
 			}
-			return false
+			return true
 		},
 		Level:     -1,
 		MinLength: 0,
