@@ -41,8 +41,8 @@ func SetupRoutes(h *Handlers) *echo.Echo {
 
 	r := e.Router()
 	r.Add(echo.GET, "/", h.GetList)
-	r.Add(echo.GET, "/value/:metricType/:metricName", h.Get)
-	r.Add(echo.POST, "/update/:metricType/:metricName/:metricValue", h.Store)
+	r.Add(echo.GET, "/value/:metricType/:metricName/", h.Get)
+	r.Add(echo.POST, "/update/:metricType/:metricName/:metricValue/", h.Store)
 	r.Add(echo.POST, "/update/", h.StoreMetrics)
 	r.Add(echo.POST, "/value/", h.Value)
 
