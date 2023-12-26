@@ -107,7 +107,10 @@ func (s *FileStorage) flush() error {
 	if err != nil {
 		return fmt.Errorf("failed to truncate: %w", err)
 	}
-	s.file.Seek(0, 0)
+	_, err = s.file.Seek(0, 0)
+	if err != nil {
+		return fmt.Errorf("failed to seek: %w", err)
+	}
 
 	enc := json.NewEncoder(s.file)
 	for _, m := range ms {
@@ -120,10 +123,10 @@ func (s *FileStorage) flush() error {
 	return nil
 }
 
-func (s *FileStorage) Stop() {
+func (s *FileStorage) Stop() error {
 	s.stopCh <- struct{}{}
 	<-s.closeCh
-	s.file.Close()
+	return s.file.Close()
 }
 
 func (s *FileStorage) Start() error {
@@ -139,11 +142,17 @@ func (s *FileStorage) Start() error {
 		for {
 			select {
 			case <-ticker.C:
-				s.flush()
-				l.Info().Msg("file storage flushed")
+				if err := s.flush(); err != nil {
+					l.Error().Err(err).Msg("file storage error")
+				} else {
+					l.Info().Msg("file storage flushed")
+				}
 			case <-s.stopCh:
-				s.flush()
-				l.Info().Msg("file storage flushed")
+				if err := s.flush(); err != nil {
+					l.Error().Err(err).Msg("file storage error")
+				} else {
+					l.Info().Msg("file storage flushed")
+				}
 				s.closeCh <- struct{}{}
 				l.Info().Msg("file storage stopped")
 				return

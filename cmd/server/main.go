@@ -41,9 +41,13 @@ func main() {
 	}()
 
 	gracefulShutdown()
-	fs.Stop()
-	err = server.Close()
 
+	err = fs.Stop()
+	if err != nil {
+		l.Error().Err(err)
+	}
+
+	err = server.Close()
 	if err != nil {
 		l.Error().Err(err)
 	}
