@@ -3,10 +3,11 @@ package client
 import (
 	"bytes"
 	"compress/gzip"
-	"github.com/soltanat/metrics/internal/logger"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/soltanat/metrics/internal/logger"
 )
 
 type GzipTransport struct {
@@ -29,8 +30,8 @@ func (t *GzipTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Body = io.NopCloser(&buf)        // Set the compressed body to the request
-	req.ContentLength = int64(buf.Len()) // Update the Content-Length header
+	req.Body = io.NopCloser(&buf)
+	req.ContentLength = int64(buf.Len())
 	req.Header.Set("Content-Encoding", "gzip")
 
 	return t.Transport.RoundTrip(req)

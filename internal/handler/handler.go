@@ -2,11 +2,11 @@ package handler
 
 import (
 	"errors"
-	"github.com/rs/zerolog"
 	"net/http"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 
 	"github.com/soltanat/metrics/internal/logger"
 	"github.com/soltanat/metrics/internal/model"

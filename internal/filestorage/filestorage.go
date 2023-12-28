@@ -14,7 +14,6 @@ import (
 
 type FileStorage struct {
 	storage.Storage
-	store    func(m *model.Metric) error
 	file     *os.File
 	mu       *sync.Mutex
 	interval time.Duration

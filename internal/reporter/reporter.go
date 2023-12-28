@@ -2,6 +2,7 @@ package reporter
 
 import (
 	"fmt"
+
 	"github.com/soltanat/metrics/internal"
 	"github.com/soltanat/metrics/internal/client"
 )

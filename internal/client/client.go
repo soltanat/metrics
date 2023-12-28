@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/soltanat/metrics/internal/handler"
-	"github.com/soltanat/metrics/internal/model"
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/soltanat/metrics/internal/handler"
+	"github.com/soltanat/metrics/internal/model"
 )
 
 const (

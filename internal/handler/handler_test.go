@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"github.com/soltanat/metrics/internal/logger"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -10,6 +9,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/soltanat/metrics/internal/logger"
 	"github.com/soltanat/metrics/internal/model"
 	"github.com/soltanat/metrics/internal/storage"
 )
