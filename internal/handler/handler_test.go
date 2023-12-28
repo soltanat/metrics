@@ -9,6 +9,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/soltanat/metrics/internal/logger"
 	"github.com/soltanat/metrics/internal/model"
 	"github.com/soltanat/metrics/internal/storage"
 )
@@ -258,4 +259,245 @@ func TestHandlers_GetList(t *testing.T) {
 			assert.Equal(t, tt.wantedRespBody, string(resp.Body()))
 		})
 	}
+}
+
+type StorageCall struct {
+	Metric *model.Metric
+}
+
+func TestHandlers_StoreMetrics(t *testing.T) {
+	mockStorage := &storage.MockStorage{}
+
+	h := &Handlers{
+		logger:  logger.Get(),
+		storage: mockStorage,
+	}
+
+	server := httptest.NewServer(SetupRoutes(h))
+
+	defer server.Close()
+
+	client := resty.New()
+
+	testCases := []struct {
+		name         string
+		metrics      Metrics
+		expectedCall *StorageCall
+		statusCode   int
+		on           func(metric *model.Metric, storage *storage.MockStorage)
+	}{
+		{
+			name: "StoreGaugeMetric",
+			metrics: Metrics{
+				MType: "gauge",
+				ID:    "test-id",
+				Value: float64Ptr(10.1),
+			},
+			expectedCall: &StorageCall{
+				Metric: &model.Metric{
+					Type:  model.MetricTypeGauge,
+					Name:  "test-id",
+					Gauge: 10.1,
+				},
+			},
+			statusCode: http.StatusOK,
+			on: func(metric *model.Metric, storage *storage.MockStorage) {
+				mockStorage.On("Store", metric).Return(nil).Once()
+			},
+		},
+		{
+			name: "StoreCounterMetricExistMetric",
+			metrics: Metrics{
+				MType: "counter",
+				ID:    "test-id",
+				Delta: intPtr(5),
+			},
+			expectedCall: &StorageCall{
+				Metric: &model.Metric{
+					Type:    model.MetricTypeCounter,
+					Name:    "test-id",
+					Counter: 5,
+				},
+			},
+			statusCode: http.StatusOK,
+			on: func(metric *model.Metric, storage *storage.MockStorage) {
+				mockStorage.On("GetCounter", "test-id").Return(metric, nil).Once()
+				mockStorage.On("Store", metric).Return(nil).Once()
+			},
+		},
+		{
+			name: "StoreCounterMetricNotExistMetric",
+			metrics: Metrics{
+				MType: "counter",
+				ID:    "test-id",
+				Delta: intPtr(5),
+			},
+			expectedCall: &StorageCall{
+				Metric: &model.Metric{
+					Type:    model.MetricTypeCounter,
+					Name:    "test-id",
+					Counter: 5,
+				},
+			},
+			statusCode: http.StatusOK,
+			on: func(metric *model.Metric, storage *storage.MockStorage) {
+				mockStorage.On("GetCounter", "test-id").Return(
+					nil,
+					model.ErrMetricNotFound).Once()
+				mockStorage.On("Store", metric).Return(nil).Once()
+			},
+		},
+		{
+			name: "MissingValueForGaugeMetric",
+			metrics: Metrics{
+				MType: "gauge",
+				ID:    "test-id",
+			},
+			expectedCall: nil,
+			statusCode:   http.StatusBadRequest,
+		},
+		{
+			name: "MissingDeltaForCounterMetric",
+			metrics: Metrics{
+				MType: "counter",
+				ID:    "test-id",
+			},
+			expectedCall: nil,
+			statusCode:   http.StatusBadRequest,
+		},
+		{
+			name: "UnknownMetricType",
+			metrics: Metrics{
+				MType: "unknown",
+				ID:    "test-id",
+			},
+			expectedCall: nil,
+			statusCode:   http.StatusBadRequest,
+		},
+		{
+			name: "InvalidRequestBody",
+			metrics: Metrics{
+				MType: "gauge",
+				ID:    "test-id",
+			},
+			expectedCall: nil,
+			statusCode:   http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			if tc.on != nil {
+				tc.on(tc.expectedCall.Metric, mockStorage)
+			}
+
+			resp, err := client.R().
+				SetHeader("Content-Type", "application/json").
+				SetBody(tc.metrics).
+				Post(server.URL + "/update/")
+			assert.NoError(t, err)
+			assert.Equal(t, tc.statusCode, resp.StatusCode())
+
+			if tc.expectedCall != nil {
+				mockStorage.AssertCalled(t, "Store", tc.expectedCall.Metric)
+			}
+		})
+	}
+}
+
+func TestHandlers_Value(t *testing.T) {
+	mockStorage := &storage.MockStorage{}
+	h := &Handlers{
+		storage: mockStorage,
+	}
+
+	server := httptest.NewServer(SetupRoutes(h))
+	defer server.Close()
+
+	client := resty.New()
+
+	tests := []struct {
+		name           string
+		requestBody    string
+		expectedStatus int
+		expectedBody   string
+		on             func()
+	}{
+		{
+			name:           "Invalid request body",
+			requestBody:    `invalid request`,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   "{\"message\":\"Bad Request\"}",
+			on:             nil,
+		},
+		{
+			name:           "Invalid metric type",
+			requestBody:    `{"type": "invalid_type"}`,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   "{\"message\":\"Bad Request\"}",
+		},
+		{
+			name:           "Metric not found",
+			requestBody:    `{"type": "gauge", "id": "not_found_id"}`,
+			expectedStatus: http.StatusNotFound,
+			expectedBody:   "{\"message\":\"Not Found\"}",
+			on: func() {
+				mockStorage.On("GetGauge", "not_found_id").Return(
+					nil, model.ErrMetricNotFound,
+				).Once()
+			},
+		},
+		{
+			name:           "Successful request - Gauge",
+			requestBody:    `{"type": "gauge", "id": "valid_id"}`,
+			expectedStatus: http.StatusOK,
+			expectedBody:   `{"type": "gauge", "id": "valid_id", "value": 10.1}`,
+			on: func() {
+				mockStorage.On("GetGauge", "valid_id").Return(
+					model.NewGauge("valid_id", 10.1), nil,
+				).Once()
+			},
+		},
+		{
+			name:           "Successful request - Counter",
+			requestBody:    `{"type": "counter", "id": "valid_id"}`,
+			expectedStatus: http.StatusOK,
+			expectedBody:   `{"type": "counter", "id": "valid_id", "delta": 10}`,
+			on: func() {
+				mockStorage.On("GetCounter", "valid_id").Return(
+					model.NewCounter("valid_id", 10), nil,
+				).Once()
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.on != nil {
+				test.on()
+			}
+
+			resp, err := client.R().
+				SetHeader("Content-Type", "application/json").
+				SetBody(test.requestBody).
+				Post(server.URL + "/value/")
+
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedStatus, resp.StatusCode())
+			assert.JSONEq(t, test.expectedBody, resp.String())
+
+			mockStorage.AssertExpectations(t)
+		})
+	}
+}
+
+// Helper function to create a float64 pointer
+func float64Ptr(f float64) *float64 {
+	return &f
+}
+
+// Helper function to create an int pointer
+func intPtr(i int64) *int64 {
+	return &i
 }
