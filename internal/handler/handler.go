@@ -206,11 +206,6 @@ func (h *Handlers) update(input Metrics) (error, *model.Metric) {
 		return echo.ErrBadRequest, nil
 	}
 
-	if err := h.storage.Store(metric); err != nil {
-		h.logger.Error().Msgf("Error storing metric: %s", err)
-		return echo.ErrInternalServerError, nil
-	}
-
 	return nil, metric
 }
 

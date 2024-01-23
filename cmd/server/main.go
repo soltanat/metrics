@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/soltanat/metrics/internal/db"
 	"github.com/soltanat/metrics/internal/logger"

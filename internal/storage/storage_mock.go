@@ -15,6 +15,11 @@ func (m *MockStorage) Store(metric *model.Metric) error {
 	return args.Error(0)
 }
 
+func (m *MockStorage) StoreBatch(metric []model.Metric) error {
+	args := m.Called(metric)
+	return args.Error(0)
+}
+
 func (m *MockStorage) GetGauge(name string) (*model.Metric, error) {
 	args := m.Called(name)
 
