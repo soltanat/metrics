@@ -28,7 +28,31 @@ func main() {
 	var dbConn *pgx.Conn
 
 	if flagDBAddr == "" {
-		s = storage.NewMemStorage()
+		interval := time.Duration(flagInterval) * time.Second
+		fs, err := filestorage.New(storage.NewMemStorage(), interval, flagPath)
+		if err != nil {
+			l.Fatal().Err(err).Msg("unable to create file storage")
+		}
+
+		err = fs.Restore(flagRestore)
+		if err != nil {
+			l.Fatal().Err(err).Msg("unable to restore file storage")
+		}
+
+		err = fs.Start()
+		if err != nil {
+			l.Fatal().Err(err).Msg("unable to start file storage")
+		}
+
+		s = fs
+
+		defer func(fs *filestorage.FileStorage) {
+			err := fs.Stop()
+			if err != nil {
+				l.Error().Err(err).Msg("unable to stop file storage")
+			}
+		}(fs)
+
 	} else {
 		err := db.ApplyMigrations(flagDBAddr)
 		if err != nil {
@@ -41,30 +65,21 @@ func main() {
 		}
 
 		s = storage.NewPostgresStorage(dbConn)
+
+		defer func() {
+			err := dbConn.Close(ctx)
+			if err != nil {
+				l.Error().Err(err).Msg("unable to close database connection")
+			}
+		}()
 	}
 
-	interval := time.Duration(flagInterval) * time.Second
-	fs, err := filestorage.New(s, interval, flagPath)
-	if err != nil {
-		l.Fatal().Err(err).Msg("unable to create file storage")
-	}
-
-	err = fs.Restore(flagRestore)
-	if err != nil {
-		l.Fatal().Err(err).Msg("unable to restore file storage")
-	}
-
-	err = fs.Start()
-	if err != nil {
-		l.Fatal().Err(err).Msg("unable to start file storage")
-	}
-
-	h := handler.New(fs, dbConn)
+	h := handler.New(s, dbConn)
 
 	server := handler.SetupRoutes(h)
 
 	go func() {
-		err = server.Start(flagAddr)
+		err := server.Start(flagAddr)
 		if err != nil {
 			l.Error().Err(err)
 		}
@@ -72,12 +87,7 @@ func main() {
 
 	gracefulShutdown()
 
-	err = fs.Stop()
-	if err != nil {
-		l.Error().Err(err).Msg("unable to stop file storage")
-	}
-
-	err = server.Close()
+	err := server.Close()
 	if err != nil {
 		l.Error().Err(err).Msg("unable to close server")
 	}
