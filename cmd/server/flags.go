@@ -32,7 +32,7 @@ func parseFlags() {
 	flag.IntVar(&flagInterval, "i", 300, "store metrics interval")
 	flag.StringVar(&flagPath, "f", "/tmp/metrics-db.json", "path to store metrics")
 	flag.BoolVar(&flagRestore, "r", true, "restore metrics from file")
-	flag.StringVar(&flagDBAddr, "d", "postgres://postgres:postgres@localhost:5432", "database dsn")
+	flag.StringVar(&flagDBAddr, "d", "", "database dsn")
 	flag.Parse()
 
 	var cfg Config

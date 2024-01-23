@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5"
 	"os"
 	"os/signal"
 	"syscall"
@@ -22,17 +23,25 @@ func main() {
 
 	l := logger.Get()
 
-	err := db.ApplyMigrations(flagDBAddr)
-	if err != nil {
-		l.Fatal().Err(err).Msg("unable to apply migrations")
-	}
+	var s storage.Storage
+	var dbConn *pgx.Conn
 
-	d, err := db.New(ctx, flagDBAddr)
-	if err != nil {
-		l.Fatal().Err(err).Msg("unable to connect to database")
-	}
+	if flagDBAddr != "" {
+		err := db.ApplyMigrations(flagDBAddr)
+		if err != nil {
+			l.Fatal().Err(err).Msg("unable to apply migrations")
+		}
 
-	s := storage.NewPostgresStorage(d)
+		dbConn, err = db.New(ctx, flagDBAddr)
+		if err != nil {
+			l.Fatal().Err(err).Msg("unable to connect to database")
+		}
+
+		s = storage.NewPostgresStorage(dbConn)
+
+	} else {
+		s = storage.NewMemStorage()
+	}
 
 	interval := time.Duration(flagInterval) * time.Second
 	fs, err := filestorage.New(s, interval, flagPath, flagRestore)
@@ -44,7 +53,7 @@ func main() {
 		l.Fatal().Err(err).Msg("unable to start file storage")
 	}
 
-	h := handler.New(fs, d)
+	h := handler.New(fs, dbConn)
 
 	server := handler.SetupRoutes(h)
 

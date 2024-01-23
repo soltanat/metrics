@@ -17,12 +17,12 @@ import (
 
 type Handlers struct {
 	storage storage.Storage
-	db      db.Conn
+	dbConn  db.Conn
 	logger  zerolog.Logger
 }
 
-func New(s storage.Storage, db db.Conn) *Handlers {
-	return &Handlers{storage: s, db: db, logger: logger.Get()}
+func New(s storage.Storage, dbConn db.Conn) *Handlers {
+	return &Handlers{storage: s, dbConn: dbConn, logger: logger.Get()}
 }
 
 func (h *Handlers) GetList(c echo.Context) error {
@@ -214,8 +214,13 @@ func (h *Handlers) Value(c echo.Context) error {
 }
 
 func (h *Handlers) Ping(c echo.Context) error {
-	if err := h.db.Ping(c.Request().Context()); err != nil {
+	if h.dbConn == nil {
+		return c.NoContent(http.StatusServiceUnavailable)
+	}
+
+	if err := h.dbConn.Ping(c.Request().Context()); err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
 	return c.NoContent(http.StatusOK)
 }

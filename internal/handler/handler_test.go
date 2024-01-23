@@ -511,7 +511,7 @@ func TestHandlers_Ping(t *testing.T) {
 
 	h := &Handlers{
 		storage: mockStorage,
-		db:      mockDB,
+		dbConn:  mockDB,
 	}
 
 	server := httptest.NewServer(SetupRoutes(h))
