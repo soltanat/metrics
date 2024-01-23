@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"github.com/soltanat/metrics/internal/db"
+	"github.com/soltanat/metrics/internal/logger"
 	"os"
 	"os/signal"
 	"syscall"
@@ -8,14 +11,20 @@ import (
 
 	"github.com/soltanat/metrics/internal/filestorage"
 	"github.com/soltanat/metrics/internal/handler"
-	"github.com/soltanat/metrics/internal/logger"
 	"github.com/soltanat/metrics/internal/storage"
 )
 
 func main() {
+	ctx := context.Background()
+
 	parseFlags()
 
 	l := logger.Get()
+
+	d, err := db.New(ctx, flagDBAddr)
+	if err != nil {
+		l.Fatal().Err(err)
+	}
 
 	s := storage.NewMemStorage()
 
@@ -29,7 +38,7 @@ func main() {
 		l.Fatal().Err(err)
 	}
 
-	h := handler.New(fs)
+	h := handler.New(fs, d)
 
 	server := handler.SetupRoutes(h)
 
