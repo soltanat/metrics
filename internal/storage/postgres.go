@@ -55,10 +55,6 @@ func (s *PostgresStorage) StoreBatch(metrics []model.Metric) error {
 	}
 
 	br := tx.SendBatch(ctx, batch)
-	if err != nil {
-		_ = tx.Rollback(ctx)
-		return err
-	}
 
 	err = br.Close()
 	if err != nil {
