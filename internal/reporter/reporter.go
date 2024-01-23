@@ -28,7 +28,9 @@ func (w *Reporter) Report() error {
 	if len(metrics) == 0 {
 		return nil
 	}
-	err = w.client.Updates(metrics)
+	err = internal.Backoff(func() error {
+		return w.client.Updates(metrics)
+	})
 	if err != nil {
 		return fmt.Errorf("update metrics error: %w", err)
 	}

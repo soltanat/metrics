@@ -33,7 +33,7 @@ Content-Type: application/json
 {
   "id": "test",
   "type": "counter",
-  "delta": 101
+  "delta": 544041449
 }
 
 
@@ -42,7 +42,7 @@ POST http://{{address}}/value
 Content-Type: application/json
 
 {
-  "id": "PollCount",
+  "id": "test",
   "type": "counter"
 }
 
@@ -56,3 +56,21 @@ Accept-Encoding: gzip
 GET http://{{address}}/
 Accept: text/plain
 Accept-Encoding: gzip
+
+
+###
+POST http://{{address}}/updates
+Content-Type: application/json
+
+[
+  {
+    "id": "test",
+    "type": "counter",
+    "delta": 360608547
+  },
+  {
+    "id": "test",
+    "type": "counter",
+    "delta": 544041449
+  }
+]

@@ -4,16 +4,18 @@ import (
 	"context"
 	"errors"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/jackc/pgx/v5"
 
 	"github.com/soltanat/metrics/internal/model"
 )
 
 type PostgresStorage struct {
-	conn *pgx.Conn
+	conn *pgxpool.Pool
 }
 
-func NewPostgresStorage(conn *pgx.Conn) *PostgresStorage {
+func NewPostgresStorage(conn *pgxpool.Pool) *PostgresStorage {
 	return &PostgresStorage{conn: conn}
 }
 

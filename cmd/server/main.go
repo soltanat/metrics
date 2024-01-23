@@ -7,13 +7,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/soltanat/metrics/internal/db"
-	"github.com/soltanat/metrics/internal/logger"
-
 	"github.com/soltanat/metrics/internal/filestorage"
 	"github.com/soltanat/metrics/internal/handler"
+	"github.com/soltanat/metrics/internal/logger"
 	"github.com/soltanat/metrics/internal/storage"
 )
 
@@ -25,7 +24,7 @@ func main() {
 	l := logger.Get()
 
 	var s storage.Storage
-	var dbConn *pgx.Conn
+	var dbConn *pgxpool.Pool
 
 	if flagDBAddr == "" {
 		interval := time.Duration(flagInterval) * time.Second
@@ -65,13 +64,9 @@ func main() {
 		}
 
 		s = storage.NewPostgresStorage(dbConn)
+		s = storage.NewBackoffPostgresStorage(s)
 
-		defer func() {
-			err := dbConn.Close(ctx)
-			if err != nil {
-				l.Error().Err(err).Msg("unable to close database connection")
-			}
-		}()
+		defer dbConn.Close()
 	}
 
 	h := handler.New(s, dbConn)
