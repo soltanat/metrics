@@ -22,21 +22,26 @@ func main() {
 
 	l := logger.Get()
 
-	d, err := db.New(ctx, flagDBAddr)
+	err := db.ApplyMigrations(flagDBAddr)
 	if err != nil {
-		l.Fatal().Err(err)
+		l.Fatal().Err(err).Msg("unable to apply migrations")
 	}
 
-	s := storage.NewMemStorage()
+	d, err := db.New(ctx, flagDBAddr)
+	if err != nil {
+		l.Fatal().Err(err).Msg("unable to connect to database")
+	}
+
+	s := storage.NewPostgresStorage(d)
 
 	interval := time.Duration(flagInterval) * time.Second
 	fs, err := filestorage.New(s, interval, flagPath, flagRestore)
 	if err != nil {
-		l.Fatal().Err(err)
+		l.Fatal().Err(err).Msg("unable to create file storage")
 	}
 	err = fs.Start()
 	if err != nil {
-		l.Fatal().Err(err)
+		l.Fatal().Err(err).Msg("unable to start file storage")
 	}
 
 	h := handler.New(fs, d)
@@ -54,12 +59,12 @@ func main() {
 
 	err = fs.Stop()
 	if err != nil {
-		l.Error().Err(err)
+		l.Error().Err(err).Msg("unable to stop file storage")
 	}
 
 	err = server.Close()
 	if err != nil {
-		l.Error().Err(err)
+		l.Error().Err(err).Msg("unable to close server")
 	}
 }
 

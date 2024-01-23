@@ -1,9 +1,12 @@
 package main
 
 import (
+	"errors"
 	"flag"
+	"os"
 
 	"github.com/caarlos0/env/v6"
+	"github.com/joho/godotenv"
 
 	"github.com/soltanat/metrics/internal/logger"
 )
@@ -29,10 +32,15 @@ func parseFlags() {
 	flag.IntVar(&flagInterval, "i", 300, "store metrics interval")
 	flag.StringVar(&flagPath, "f", "/tmp/metrics-db.json", "path to store metrics")
 	flag.BoolVar(&flagRestore, "r", true, "restore metrics from file")
-	flag.StringVar(&flagDBAddr, "d", "localhost:5432", "database dsn")
+	flag.StringVar(&flagDBAddr, "d", "postgres://postgres:postgres@localhost:5432", "database dsn")
 	flag.Parse()
 
 	var cfg Config
+	if err := godotenv.Load(); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			l.Fatal().Err(err)
+		}
+	}
 	err := env.Parse(&cfg)
 	if err != nil {
 		l.Fatal().Err(err)
