@@ -40,38 +40,33 @@ func (s *PostgresStorage) Store(metric *model.Metric) error {
 
 func (s *PostgresStorage) StoreBatch(metrics []model.Metric) error {
 	ctx := context.Background()
-	tx, err := s.conn.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-
-	_, err = tx.CopyFrom(
-		ctx,
-		pgx.Identifier{"metrics", "metrics_gauge"},
-		[]string{"name", "value"},
-		pgx.CopyFromSlice(len(metrics), func(i int) ([]any, error) {
-			if metrics[i].Type == model.MetricTypeGauge {
-				return []any{metrics[i].Name, metrics[i].Gauge}, nil
-			}
-			return nil, nil
-		}),
-	)
+	tx, err := s.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.CopyFrom(
-		ctx,
-		pgx.Identifier{"metrics", "metrics_counter"},
-		[]string{"name", "value"},
-		pgx.CopyFromSlice(len(metrics), func(i int) ([]any, error) {
-			if metrics[i].Type == model.MetricTypeCounter {
-				return []any{metrics[i].Name, metrics[i].Counter}, nil
-			}
-			return nil, nil
-		}),
-	)
+	batch := &pgx.Batch{}
+	for _, m := range metrics {
+		if m.Type == model.MetricTypeGauge {
+			batch.Queue(`INSERT INTO metrics.metrics_gauge (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = $2`, m.Name, m.Gauge)
+		} else if m.Type == model.MetricTypeCounter {
+			batch.Queue(`INSERT INTO metrics.metrics_counter (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = $2`, m.Name, m.Counter)
+		}
+	}
+
+	br := tx.SendBatch(ctx, batch)
+	if err != nil {
+		_ = tx.Rollback(ctx)
+		return err
+	}
+
+	err = br.Close()
+	if err != nil {
+		_ = tx.Rollback(ctx)
+		return err
+	}
+
+	err = tx.Commit(ctx)
 	if err != nil {
 		return err
 	}

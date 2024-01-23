@@ -103,7 +103,8 @@ func (c *Client) Updates(metrics []model.Metric) error {
 
 	bodyMessage := make([]handler.Metrics, 0, len(metrics))
 
-	for _, m := range metrics {
+	for i := 0; i < len(metrics); i++ {
+		m := &metrics[i]
 		bodyMetric := handler.Metrics{
 			ID:    m.Name,
 			MType: m.Type.String(),
@@ -114,6 +115,7 @@ func (c *Client) Updates(metrics []model.Metric) error {
 		case model.MetricTypeCounter:
 			bodyMetric.Delta = &m.Counter
 		}
+		bodyMessage = append(bodyMessage, bodyMetric)
 	}
 
 	body := new(bytes.Buffer)
