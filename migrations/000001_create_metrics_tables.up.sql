@@ -4,7 +4,7 @@ CREATE TABLE metrics.metrics_counter
 (
     id         SERIAL PRIMARY KEY,
     name       VARCHAR(255) NOT NULL,
-    value      INTEGER      NOT NULL,
+    value      BIGINT       NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT current_timestamp
 );
 

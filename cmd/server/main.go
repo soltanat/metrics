@@ -26,7 +26,9 @@ func main() {
 	var s storage.Storage
 	var dbConn *pgx.Conn
 
-	if flagDBAddr != "" {
+	if flagDBAddr == "" {
+		s = storage.NewMemStorage()
+	} else {
 		err := db.ApplyMigrations(flagDBAddr)
 		if err != nil {
 			l.Fatal().Err(err).Msg("unable to apply migrations")
@@ -38,16 +40,19 @@ func main() {
 		}
 
 		s = storage.NewPostgresStorage(dbConn)
-
-	} else {
-		s = storage.NewMemStorage()
 	}
 
 	interval := time.Duration(flagInterval) * time.Second
-	fs, err := filestorage.New(s, interval, flagPath, flagRestore)
+	fs, err := filestorage.New(s, interval, flagPath)
 	if err != nil {
 		l.Fatal().Err(err).Msg("unable to create file storage")
 	}
+
+	err = fs.Restore(flagRestore)
+	if err != nil {
+		l.Fatal().Err(err).Msg("unable to restore file storage")
+	}
+
 	err = fs.Start()
 	if err != nil {
 		l.Fatal().Err(err).Msg("unable to start file storage")
