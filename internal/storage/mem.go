@@ -23,7 +23,21 @@ func NewMemStorage() *MemStorage {
 func (s *MemStorage) Store(metric *model.Metric) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.store(metric)
+}
 
+func (s *MemStorage) StoreBatch(metrics []model.Metric) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, metric := range metrics {
+		if err := s.store(&metric); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *MemStorage) store(metric *model.Metric) error {
 	switch metric.Type {
 	case model.MetricTypeCounter:
 		s.counter[metric.Name] = metric.Counter

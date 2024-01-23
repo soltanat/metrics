@@ -25,11 +25,12 @@ func (w *Reporter) Report() error {
 	if err != nil {
 		return fmt.Errorf("get metrics error: %w", err)
 	}
-	for _, m := range metrics {
-		err := w.client.Update(&m)
-		if err != nil {
-			return fmt.Errorf("update metrics error: %w", err)
-		}
+	if len(metrics) == 0 {
+		return nil
+	}
+	err = w.client.Updates(metrics)
+	if err != nil {
+		return fmt.Errorf("update metrics error: %w", err)
 	}
 	return nil
 }

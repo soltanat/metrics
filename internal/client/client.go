@@ -16,6 +16,7 @@ const (
 	gaugeEndpointPrefix   = "/update/gauge"
 	counterEndpointPrefix = "/update/counter"
 	updateEndpointPrefix  = "/update/"
+	updatesEndpointPrefix = "/updates/"
 )
 
 var errValidationName = fmt.Errorf("min name len 1")
@@ -86,6 +87,33 @@ func (c *Client) Update(m *model.Metric) error {
 		bodyMessage.Value = &m.Gauge
 	case model.MetricTypeCounter:
 		bodyMessage.Delta = &m.Counter
+	}
+
+	body := new(bytes.Buffer)
+	err := json.NewEncoder(body).Encode(bodyMessage)
+	if err != nil {
+		return err
+	}
+
+	return c.makeRequest(reqURL, "application/json", body)
+}
+
+func (c *Client) Updates(metrics []model.Metric) error {
+	reqURL, _ := url.JoinPath(c.address, updatesEndpointPrefix)
+
+	bodyMessage := make([]handler.Metrics, 0, len(metrics))
+
+	for _, m := range metrics {
+		bodyMetric := handler.Metrics{
+			ID:    m.Name,
+			MType: m.Type.String(),
+		}
+		switch m.Type {
+		case model.MetricTypeGauge:
+			bodyMetric.Value = &m.Gauge
+		case model.MetricTypeCounter:
+			bodyMetric.Delta = &m.Counter
+		}
 	}
 
 	body := new(bytes.Buffer)

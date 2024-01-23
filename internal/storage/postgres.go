@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"errors"
-
 	"github.com/jackc/pgx/v5"
 
 	"github.com/soltanat/metrics/internal/model"
@@ -35,6 +34,47 @@ func (s *PostgresStorage) Store(metric *model.Metric) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (s *PostgresStorage) StoreBatch(metrics []model.Metric) error {
+	ctx := context.Background()
+	tx, err := s.conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.CopyFrom(
+		ctx,
+		pgx.Identifier{"metrics", "metrics_gauge"},
+		[]string{"name", "value"},
+		pgx.CopyFromSlice(len(metrics), func(i int) ([]any, error) {
+			if metrics[i].Type == model.MetricTypeGauge {
+				return []any{metrics[i].Name, metrics[i].Gauge}, nil
+			}
+			return nil, nil
+		}),
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.CopyFrom(
+		ctx,
+		pgx.Identifier{"metrics", "metrics_counter"},
+		[]string{"name", "value"},
+		pgx.CopyFromSlice(len(metrics), func(i int) ([]any, error) {
+			if metrics[i].Type == model.MetricTypeCounter {
+				return []any{metrics[i].Name, metrics[i].Counter}, nil
+			}
+			return nil, nil
+		}),
+	)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

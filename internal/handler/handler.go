@@ -128,39 +128,9 @@ func (h *Handlers) StoreMetrics(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	var metric *model.Metric
-
-	metricType, err := model.ParseMetricType(metrics.MType)
+	err, metric := h.update(metrics)
 	if err != nil {
-		h.logger.Error().Err(err).Msg("Error parsing metric type")
-		return echo.ErrBadRequest
-	}
-
-	switch metricType {
-	case model.MetricTypeGauge:
-		if metrics.Value == nil {
-			h.logger.Error().Msg("Missing value for gauge metric")
-			return echo.ErrBadRequest
-		}
-		metric = model.NewGauge(metrics.ID, *metrics.Value)
-	case model.MetricTypeCounter:
-		if metrics.Delta == nil {
-			h.logger.Error().Msg("Missing delta for counter metric")
-			return echo.ErrBadRequest
-		}
-		m, err := h.storage.GetCounter(metrics.ID)
-		if err != nil {
-			if !errors.Is(err, model.ErrMetricNotFound) {
-				h.logger.Error().Msgf("Error getting counter metric: %s", err)
-				return echo.ErrBadRequest
-			}
-			m = model.NewCounter(metrics.ID, 0)
-		}
-		m.AddCounter(*metrics.Delta)
-		metric = m
-	default:
-		h.logger.Error().Msg("Unknown metric type")
-		return echo.ErrBadRequest
+		return err
 	}
 
 	if err := h.storage.Store(metric); err != nil {
@@ -171,6 +141,77 @@ func (h *Handlers) StoreMetrics(c echo.Context) error {
 	h.logger.Info().Msg("Metrics stored successfully")
 
 	return c.NoContent(http.StatusOK)
+}
+
+func (h *Handlers) StoreMetricsBatch(c echo.Context) error {
+	var metrics []Metrics
+	if err := c.Bind(&metrics); err != nil {
+		h.logger.Error().Msgf("Error binding metrics: %s", err)
+		return echo.ErrBadRequest
+	}
+
+	metricsToStore := make([]model.Metric, 0, len(metrics))
+	for _, m := range metrics {
+		err, metric := h.update(m)
+		if err != nil {
+			return err
+		}
+		metricsToStore = append(metricsToStore, *metric)
+	}
+
+	if err := h.storage.StoreBatch(metricsToStore); err != nil {
+		h.logger.Error().Msgf("Error storing metric: %s", err)
+		return echo.ErrInternalServerError
+	}
+
+	h.logger.Info().Msg("Metrics stored successfully")
+
+	return c.NoContent(http.StatusOK)
+
+}
+
+func (h *Handlers) update(input Metrics) (error, *model.Metric) {
+	var metric *model.Metric
+
+	metricType, err := model.ParseMetricType(input.MType)
+	if err != nil {
+		h.logger.Error().Err(err).Msg("Error parsing metric type")
+		return echo.ErrBadRequest, nil
+	}
+
+	switch metricType {
+	case model.MetricTypeGauge:
+		if input.Value == nil {
+			h.logger.Error().Msg("Missing value for gauge metric")
+			return echo.ErrBadRequest, nil
+		}
+		metric = model.NewGauge(input.ID, *input.Value)
+	case model.MetricTypeCounter:
+		if input.Delta == nil {
+			h.logger.Error().Msg("Missing delta for counter metric")
+			return echo.ErrBadRequest, nil
+		}
+		m, err := h.storage.GetCounter(input.ID)
+		if err != nil {
+			if !errors.Is(err, model.ErrMetricNotFound) {
+				h.logger.Error().Msgf("Error getting counter metric: %s", err)
+				return echo.ErrBadRequest, nil
+			}
+			m = model.NewCounter(input.ID, 0)
+		}
+		m.AddCounter(*input.Delta)
+		metric = m
+	default:
+		h.logger.Error().Msg("Unknown metric type")
+		return echo.ErrBadRequest, nil
+	}
+
+	if err := h.storage.Store(metric); err != nil {
+		h.logger.Error().Msgf("Error storing metric: %s", err)
+		return echo.ErrInternalServerError, nil
+	}
+
+	return nil, metric
 }
 
 func (h *Handlers) Value(c echo.Context) error {
