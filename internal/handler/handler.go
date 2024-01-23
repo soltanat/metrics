@@ -2,9 +2,10 @@ package handler
 
 import (
 	"errors"
-	"github.com/soltanat/metrics/internal/db"
 	"net/http"
 	"strconv"
+
+	"github.com/soltanat/metrics/internal/db"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -16,11 +17,11 @@ import (
 
 type Handlers struct {
 	storage storage.Storage
-	db      *db.DB
+	db      db.Conn
 	logger  zerolog.Logger
 }
 
-func New(s storage.Storage, db *db.DB) *Handlers {
+func New(s storage.Storage, db db.Conn) *Handlers {
 	return &Handlers{storage: s, db: db, logger: logger.Get()}
 }
 
@@ -214,7 +215,7 @@ func (h *Handlers) Value(c echo.Context) error {
 
 func (h *Handlers) Ping(c echo.Context) error {
 	if err := h.db.Ping(c.Request().Context()); err != nil {
-		return echo.ErrInternalServerError
+		return c.NoContent(http.StatusInternalServerError)
 	}
 	return c.NoContent(http.StatusOK)
 }

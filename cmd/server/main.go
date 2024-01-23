@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"github.com/soltanat/metrics/internal/db"
-	"github.com/soltanat/metrics/internal/logger"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/soltanat/metrics/internal/db"
+	"github.com/soltanat/metrics/internal/logger"
 
 	"github.com/soltanat/metrics/internal/filestorage"
 	"github.com/soltanat/metrics/internal/handler"

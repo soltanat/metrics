@@ -1,10 +1,16 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+
+	"github.com/soltanat/metrics/internal/db"
+	"github.com/soltanat/metrics/internal/db/mock"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
@@ -17,6 +23,7 @@ import (
 func TestHandlers_Get(t *testing.T) {
 	type mockedFields struct {
 		storage *storage.MockStorage
+		db      db.Conn
 	}
 	tests := []struct {
 		name           string
@@ -29,7 +36,7 @@ func TestHandlers_Get(t *testing.T) {
 		{
 			name:           "existed counter",
 			path:           "/value/counter/counter1",
-			mockedFields:   mockedFields{storage: &storage.MockStorage{}},
+			mockedFields:   mockedFields{storage: &storage.MockStorage{}, db: &mock.MockConn{}},
 			wantResponse:   "1",
 			wantStatusCode: http.StatusOK,
 			on: func(fields *mockedFields) {
@@ -41,7 +48,7 @@ func TestHandlers_Get(t *testing.T) {
 		{
 			name:           "existed gauge",
 			path:           "/value/gauge/gauge1",
-			mockedFields:   mockedFields{storage: &storage.MockStorage{}},
+			mockedFields:   mockedFields{storage: &storage.MockStorage{}, db: &mock.MockConn{}},
 			wantResponse:   "1.1",
 			wantStatusCode: http.StatusOK,
 			on: func(fields *mockedFields) {
@@ -53,7 +60,7 @@ func TestHandlers_Get(t *testing.T) {
 		{
 			name:           "unknown type",
 			path:           "/value/unknown/name",
-			mockedFields:   mockedFields{storage: &storage.MockStorage{}},
+			mockedFields:   mockedFields{storage: &storage.MockStorage{}, db: &mock.MockConn{}},
 			wantStatusCode: http.StatusBadRequest,
 			wantResponse:   "",
 			on:             nil,
@@ -61,7 +68,7 @@ func TestHandlers_Get(t *testing.T) {
 		{
 			name:           "not existed gauge",
 			path:           "/value/gauge/name",
-			mockedFields:   mockedFields{storage: &storage.MockStorage{}},
+			mockedFields:   mockedFields{storage: &storage.MockStorage{}, db: &mock.MockConn{}},
 			wantStatusCode: http.StatusNotFound,
 			wantResponse:   "",
 			on: func(fields *mockedFields) {
@@ -73,7 +80,7 @@ func TestHandlers_Get(t *testing.T) {
 		{
 			name:           "not existed counter",
 			path:           "/value/counter/name",
-			mockedFields:   mockedFields{storage: &storage.MockStorage{}},
+			mockedFields:   mockedFields{storage: &storage.MockStorage{}, db: &mock.MockConn{}},
 			wantStatusCode: http.StatusNotFound,
 			wantResponse:   "",
 			on: func(fields *mockedFields) {
@@ -85,7 +92,7 @@ func TestHandlers_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := New(tt.mockedFields.storage)
+			h := New(tt.mockedFields.storage, tt.mockedFields.db)
 			srv := httptest.NewServer(SetupRoutes(h))
 			defer srv.Close()
 
@@ -113,6 +120,7 @@ func TestHandlers_Get(t *testing.T) {
 func TestHandlers_Store(t *testing.T) {
 	type mockedFields struct {
 		storage *storage.MockStorage
+		db      db.Conn
 	}
 	tests := []struct {
 		name         string
@@ -124,7 +132,7 @@ func TestHandlers_Store(t *testing.T) {
 		{
 			name:         "store counter",
 			path:         "/update/counter/name/1",
-			mockedFields: mockedFields{storage: &storage.MockStorage{}},
+			mockedFields: mockedFields{storage: &storage.MockStorage{}, db: &mock.MockConn{}},
 			wantRespCode: http.StatusOK,
 			on: func(fields *mockedFields) {
 				m := model.NewCounter("name", 1)
@@ -135,7 +143,7 @@ func TestHandlers_Store(t *testing.T) {
 		{
 			name:         "store new counter",
 			path:         "/update/counter/name/1",
-			mockedFields: mockedFields{storage: &storage.MockStorage{}},
+			mockedFields: mockedFields{storage: &storage.MockStorage{}, db: &mock.MockConn{}},
 			wantRespCode: http.StatusOK,
 			on: func(fields *mockedFields) {
 				m := model.NewCounter("name", 1)
@@ -148,7 +156,7 @@ func TestHandlers_Store(t *testing.T) {
 		{
 			name:         "store gauge",
 			path:         "/update/gauge/name/1.1",
-			mockedFields: mockedFields{storage: &storage.MockStorage{}},
+			mockedFields: mockedFields{storage: &storage.MockStorage{}, db: &mock.MockConn{}},
 			wantRespCode: http.StatusOK,
 			on: func(fields *mockedFields) {
 				fields.storage.On(
@@ -159,28 +167,28 @@ func TestHandlers_Store(t *testing.T) {
 		{
 			name:         "store float to counter",
 			path:         "/update/counter/name/1.1",
-			mockedFields: mockedFields{storage: &storage.MockStorage{}},
+			mockedFields: mockedFields{storage: &storage.MockStorage{}, db: &mock.MockConn{}},
 			wantRespCode: http.StatusBadRequest,
 			on:           nil,
 		},
 		{
 			name:         "store string to counter",
 			path:         "/update/counter/name/str",
-			mockedFields: mockedFields{storage: &storage.MockStorage{}},
+			mockedFields: mockedFields{storage: &storage.MockStorage{}, db: &mock.MockConn{}},
 			wantRespCode: http.StatusBadRequest,
 			on:           nil,
 		},
 		{
 			name:         "store unknown type",
 			path:         "/update/unknown/name/1",
-			mockedFields: mockedFields{storage: &storage.MockStorage{}},
+			mockedFields: mockedFields{storage: &storage.MockStorage{}, db: &mock.MockConn{}},
 			wantRespCode: http.StatusBadRequest,
 			on:           nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := New(tt.mockedFields.storage)
+			h := New(tt.mockedFields.storage, tt.mockedFields.db)
 			srv := httptest.NewServer(SetupRoutes(h))
 			defer srv.Close()
 
@@ -207,6 +215,7 @@ func TestHandlers_Store(t *testing.T) {
 func TestHandlers_GetList(t *testing.T) {
 	type mockedFields struct {
 		storage *storage.MockStorage
+		db      db.Conn
 	}
 	tests := []struct {
 		name           string
@@ -217,7 +226,7 @@ func TestHandlers_GetList(t *testing.T) {
 	}{
 		{
 			name:         "not empty storage",
-			mockedFields: mockedFields{storage: &storage.MockStorage{}},
+			mockedFields: mockedFields{storage: &storage.MockStorage{}, db: &mock.MockConn{}},
 			on: func(fields *mockedFields) {
 				fields.storage.On("GetList").Return([]model.Metric{
 					*model.NewCounter("metric1", 1),
@@ -229,7 +238,7 @@ func TestHandlers_GetList(t *testing.T) {
 		},
 		{
 			name:         "empty storage",
-			mockedFields: mockedFields{storage: &storage.MockStorage{}},
+			mockedFields: mockedFields{storage: &storage.MockStorage{}, db: &mock.MockConn{}},
 			on: func(fields *mockedFields) {
 				fields.storage.On("GetList").Return([]model.Metric{}, nil)
 			},
@@ -239,7 +248,7 @@ func TestHandlers_GetList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := New(tt.mockedFields.storage)
+			h := New(tt.mockedFields.storage, tt.mockedFields.db)
 			srv := httptest.NewServer(SetupRoutes(h))
 			defer srv.Close()
 
@@ -486,6 +495,62 @@ func TestHandlers_Value(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedStatus, resp.StatusCode())
 			assert.JSONEq(t, test.expectedBody, resp.String())
+
+			mockStorage.AssertExpectations(t)
+		})
+	}
+}
+
+func TestHandlers_Ping(t *testing.T) {
+	mockStorage := &storage.MockStorage{}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mock.NewMockConn(ctrl)
+
+	h := &Handlers{
+		storage: mockStorage,
+		db:      mockDB,
+	}
+
+	server := httptest.NewServer(SetupRoutes(h))
+	defer server.Close()
+
+	client := resty.New()
+
+	tests := []struct {
+		name           string
+		expectedStatus int
+		on             func()
+	}{
+		{
+			name:           "Ping failed",
+			expectedStatus: http.StatusInternalServerError,
+			on: func() {
+				mockDB.EXPECT().Ping(gomock.Any()).Return(fmt.Errorf("ping failed")).Times(1)
+			},
+		},
+		{
+			name:           "Ping succeeded",
+			expectedStatus: http.StatusOK,
+			on: func() {
+				mockDB.EXPECT().Ping(gomock.Any()).Return(nil).Times(1)
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.on != nil {
+				test.on()
+			}
+
+			resp, err := client.R().Get(server.URL + "/ping")
+
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedStatus, resp.StatusCode())
+			assert.Equal(t, "", resp.String())
 
 			mockStorage.AssertExpectations(t)
 		})

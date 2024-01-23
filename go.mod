@@ -5,6 +5,7 @@ go 1.21.4
 require (
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/go-resty/resty/v2 v2.11.0
+	github.com/golang/mock v1.6.0
 	github.com/jackc/pgx/v5 v5.5.2
 	github.com/labstack/echo/v4 v4.11.3
 	github.com/rs/zerolog v1.31.0
