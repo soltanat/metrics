@@ -50,7 +50,7 @@ func (s *PostgresStorage) StoreBatch(metrics []model.Metric) error {
 		if m.Type == model.MetricTypeGauge {
 			batch.Queue(`INSERT INTO metrics.metrics_gauge (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = $2`, m.Name, m.Gauge)
 		} else if m.Type == model.MetricTypeCounter {
-			batch.Queue(`INSERT INTO metrics.metrics_counter (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = $2`, m.Name, m.Counter)
+			batch.Queue(`INSERT INTO metrics.metrics_counter (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = metrics_counter.value + $2`, m.Name, m.Counter)
 		}
 	}
 
