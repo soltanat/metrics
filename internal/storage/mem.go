@@ -40,7 +40,7 @@ func (s *MemStorage) StoreBatch(metrics []model.Metric) error {
 func (s *MemStorage) store(metric *model.Metric) error {
 	switch metric.Type {
 	case model.MetricTypeCounter:
-		s.counter[metric.Name] = metric.Counter
+		s.counter[metric.Name] += metric.Counter
 	case model.MetricTypeGauge:
 		s.gauge[metric.Name] = metric.Gauge
 	}

@@ -93,7 +93,7 @@ func TestHandlers_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := New(tt.mockedFields.storage, tt.mockedFields.db)
-			srv := httptest.NewServer(SetupRoutes(h))
+			srv := httptest.NewServer(SetupRoutes(h, ""))
 			defer srv.Close()
 
 			req := resty.New().R()
@@ -136,7 +136,6 @@ func TestHandlers_Store(t *testing.T) {
 			wantRespCode: http.StatusOK,
 			on: func(fields *mockedFields) {
 				m := model.NewCounter("name", 1)
-				fields.storage.On("GetCounter", "name").Return(m, nil)
 				fields.storage.On("Store", m).Return(nil)
 			},
 		},
@@ -147,9 +146,6 @@ func TestHandlers_Store(t *testing.T) {
 			wantRespCode: http.StatusOK,
 			on: func(fields *mockedFields) {
 				m := model.NewCounter("name", 1)
-				fields.storage.On("GetCounter", "name").Return(
-					nil, model.ErrMetricNotFound,
-				)
 				fields.storage.On("Store", m).Return(nil)
 			},
 		},
@@ -189,7 +185,7 @@ func TestHandlers_Store(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := New(tt.mockedFields.storage, tt.mockedFields.db)
-			srv := httptest.NewServer(SetupRoutes(h))
+			srv := httptest.NewServer(SetupRoutes(h, ""))
 			defer srv.Close()
 
 			if tt.on != nil {
@@ -249,7 +245,7 @@ func TestHandlers_GetList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := New(tt.mockedFields.storage, tt.mockedFields.db)
-			srv := httptest.NewServer(SetupRoutes(h))
+			srv := httptest.NewServer(SetupRoutes(h, ""))
 			defer srv.Close()
 
 			tt.on(&tt.mockedFields)
@@ -282,7 +278,7 @@ func TestHandlers_StoreMetrics(t *testing.T) {
 		storage: mockStorage,
 	}
 
-	server := httptest.NewServer(SetupRoutes(h))
+	server := httptest.NewServer(SetupRoutes(h, ""))
 
 	defer server.Close()
 
@@ -421,7 +417,7 @@ func TestHandlers_Value(t *testing.T) {
 		storage: mockStorage,
 	}
 
-	server := httptest.NewServer(SetupRoutes(h))
+	server := httptest.NewServer(SetupRoutes(h, ""))
 	defer server.Close()
 
 	client := resty.New()
@@ -514,7 +510,7 @@ func TestHandlers_Ping(t *testing.T) {
 		dbConn:  mockDB,
 	}
 
-	server := httptest.NewServer(SetupRoutes(h))
+	server := httptest.NewServer(SetupRoutes(h, ""))
 	defer server.Close()
 
 	client := resty.New()

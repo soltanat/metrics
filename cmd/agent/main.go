@@ -108,6 +108,9 @@ func main() {
 	addr := fmt.Sprintf("http://%s", flagAddr)
 	transport := http.DefaultTransport
 	transport = &client.GzipTransport{Transport: transport}
+	if flagKey != "" {
+		transport = &client.SignatureTransport{Transport: transport, Key: flagKey}
+	}
 	transport = &client.LoggingTransport{Transport: transport}
 	cli := client.New(addr, transport)
 
