@@ -47,9 +47,9 @@ func (w *responseWriterWithHash) Close() error {
 func SignatureMiddleware(key string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			signature, ok := c.Request().Header["HashSHA256"]
+			signature := c.Request().Header.Get("HashSHA256")
 
-			if ok && len(signature) > 0 && signature[0] != "" {
+			if signature != "" {
 				body, err := io.ReadAll(c.Request().Body)
 				if err != nil {
 					return c.NoContent(http.StatusInternalServerError)
@@ -60,7 +60,7 @@ func SignatureMiddleware(key string) echo.MiddlewareFunc {
 				h := sha256.Sum256([]byte(string(body) + key))
 				calculatedSignature := fmt.Sprintf("%x", h)
 
-				if signature[0] != calculatedSignature {
+				if signature != calculatedSignature {
 					return c.NoContent(http.StatusBadRequest)
 				}
 			}
