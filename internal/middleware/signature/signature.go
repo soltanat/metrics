@@ -17,6 +17,7 @@ type responseWriterWithHash struct {
 	hash       hash.Hash
 	buf        *bytes.Buffer
 	statusCode int
+	n          int
 }
 
 func (w *responseWriterWithHash) Header() http.Header {
@@ -31,17 +32,21 @@ func (w *responseWriterWithHash) Write(b []byte) (int, error) {
 	if w.statusCode == 0 {
 		w.statusCode = http.StatusOK
 	}
-	l, err := w.buf.Write(b)
+	n, err := w.buf.Write(b)
 	if err != nil {
-		return l, err
+		return n, err
 	}
+	w.n += n
 	return w.hash.Write(b)
 }
 
 func (w *responseWriterWithHash) Close() error {
-	w.Writer.Header().Set("HashSHA256", hex.EncodeToString(w.hash.Sum(nil)))
-	_, err := w.Writer.Write(w.buf.Bytes())
-	return err
+	if w.n != 0 {
+		w.Writer.Header().Set("HashSHA256", hex.EncodeToString(w.hash.Sum(nil)))
+		_, err := w.Writer.Write(w.buf.Bytes())
+		return err
+	}
+	return nil
 }
 
 func SignatureMiddleware(key string) echo.MiddlewareFunc {

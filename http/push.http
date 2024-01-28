@@ -25,6 +25,10 @@ POST http://{{address}}/update/unknown/testCounter/100
 ###
 GET http://{{address}}/value/gauge/testUnknown133
 
+###
+GET http://{{address}}/value/counter/metric_name
+
+
 
 ###
 POST http://{{address}}/update/
