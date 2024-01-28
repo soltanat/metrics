@@ -21,7 +21,7 @@ type FileStorage struct {
 	closeCh  chan struct{}
 }
 
-func New(storage storage.Storage, interval time.Duration, path string, restore bool) (*FileStorage, error) {
+func New(storage storage.Storage, interval time.Duration, path string) (*FileStorage, error) {
 	s := &FileStorage{
 		Storage:  storage,
 		mu:       &sync.Mutex{},
@@ -35,20 +35,22 @@ func New(storage storage.Storage, interval time.Duration, path string, restore b
 		return nil, err
 	}
 	s.file = file
+	return s, nil
+}
 
+func (s *FileStorage) Restore(restore bool) error {
 	if restore {
-		err = s.restore()
+		err := s.restore()
 		if err != nil {
-			return nil, err
+			return err
 		}
 	} else {
-		err = s.file.Truncate(0)
+		err := s.file.Truncate(0)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-
-	return s, nil
+	return nil
 }
 
 func (s *FileStorage) Store(m *model.Metric) error {

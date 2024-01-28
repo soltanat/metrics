@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/soltanat/metrics/internal/db"
+
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 
@@ -15,11 +17,12 @@ import (
 
 type Handlers struct {
 	storage storage.Storage
+	dbConn  db.Conn
 	logger  zerolog.Logger
 }
 
-func New(s storage.Storage) *Handlers {
-	return &Handlers{storage: s, logger: logger.Get()}
+func New(s storage.Storage, dbConn db.Conn) *Handlers {
+	return &Handlers{storage: s, dbConn: dbConn, logger: logger.Get()}
 }
 
 func (h *Handlers) GetList(c echo.Context) error {
@@ -125,39 +128,9 @@ func (h *Handlers) StoreMetrics(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	var metric *model.Metric
-
-	metricType, err := model.ParseMetricType(metrics.MType)
+	metric, err := h.update(metrics)
 	if err != nil {
-		h.logger.Error().Err(err).Msg("Error parsing metric type")
-		return echo.ErrBadRequest
-	}
-
-	switch metricType {
-	case model.MetricTypeGauge:
-		if metrics.Value == nil {
-			h.logger.Error().Msg("Missing value for gauge metric")
-			return echo.ErrBadRequest
-		}
-		metric = model.NewGauge(metrics.ID, *metrics.Value)
-	case model.MetricTypeCounter:
-		if metrics.Delta == nil {
-			h.logger.Error().Msg("Missing delta for counter metric")
-			return echo.ErrBadRequest
-		}
-		m, err := h.storage.GetCounter(metrics.ID)
-		if err != nil {
-			if !errors.Is(err, model.ErrMetricNotFound) {
-				h.logger.Error().Msgf("Error getting counter metric: %s", err)
-				return echo.ErrBadRequest
-			}
-			m = model.NewCounter(metrics.ID, 0)
-		}
-		m.AddCounter(*metrics.Delta)
-		metric = m
-	default:
-		h.logger.Error().Msg("Unknown metric type")
-		return echo.ErrBadRequest
+		return err
 	}
 
 	if err := h.storage.Store(metric); err != nil {
@@ -168,6 +141,72 @@ func (h *Handlers) StoreMetrics(c echo.Context) error {
 	h.logger.Info().Msg("Metrics stored successfully")
 
 	return c.NoContent(http.StatusOK)
+}
+
+func (h *Handlers) StoreMetricsBatch(c echo.Context) error {
+	var metrics []Metrics
+	if err := c.Bind(&metrics); err != nil {
+		h.logger.Error().Msgf("Error binding metrics: %s", err)
+		return echo.ErrBadRequest
+	}
+
+	metricsToStore := make([]model.Metric, 0, len(metrics))
+	for _, m := range metrics {
+		metric, err := h.update(m)
+		if err != nil {
+			return err
+		}
+		metricsToStore = append(metricsToStore, *metric)
+	}
+
+	if err := h.storage.StoreBatch(metricsToStore); err != nil {
+		h.logger.Error().Msgf("Error storing metric: %s", err)
+		return echo.ErrInternalServerError
+	}
+
+	h.logger.Info().Msg("Metrics stored successfully")
+
+	return c.NoContent(http.StatusOK)
+
+}
+
+func (h *Handlers) update(input Metrics) (*model.Metric, error) {
+	var metric *model.Metric
+
+	metricType, err := model.ParseMetricType(input.MType)
+	if err != nil {
+		h.logger.Error().Err(err).Msg("Error parsing metric type")
+		return nil, echo.ErrBadRequest
+	}
+
+	switch metricType {
+	case model.MetricTypeGauge:
+		if input.Value == nil {
+			h.logger.Error().Msg("Missing value for gauge metric")
+			return nil, echo.ErrBadRequest
+		}
+		metric = model.NewGauge(input.ID, *input.Value)
+	case model.MetricTypeCounter:
+		if input.Delta == nil {
+			h.logger.Error().Msg("Missing delta for counter metric")
+			return nil, echo.ErrBadRequest
+		}
+		m, err := h.storage.GetCounter(input.ID)
+		if err != nil {
+			if !errors.Is(err, model.ErrMetricNotFound) {
+				h.logger.Error().Msgf("Error getting counter metric: %s", err)
+				return nil, echo.ErrBadRequest
+			}
+			m = model.NewCounter(input.ID, 0)
+		}
+		m.AddCounter(*input.Delta)
+		metric = m
+	default:
+		h.logger.Error().Msg("Unknown metric type")
+		return nil, echo.ErrBadRequest
+	}
+
+	return metric, nil
 }
 
 func (h *Handlers) Value(c echo.Context) error {
@@ -208,4 +247,16 @@ func (h *Handlers) Value(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, m)
+}
+
+func (h *Handlers) Ping(c echo.Context) error {
+	if h.dbConn == nil {
+		return c.NoContent(http.StatusServiceUnavailable)
+	}
+
+	if err := h.dbConn.Ping(c.Request().Context()); err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.NoContent(http.StatusOK)
 }
