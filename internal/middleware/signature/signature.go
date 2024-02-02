@@ -75,11 +75,11 @@ func SignatureMiddleware(key string) echo.MiddlewareFunc {
 				buf:    bytes.NewBuffer([]byte{}),
 				hash:   sha256.New(),
 			}
+			defer writer.Close()
+
 			c.Response().Writer = writer
 
 			err := next(c)
-
-			writer.Close()
 
 			return err
 

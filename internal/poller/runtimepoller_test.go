@@ -39,11 +39,6 @@ func TestPeriodicRuntimePoller_poll(t *testing.T) {
 			p := NewRuntimePoller(metricsChan)
 			assert.NotNil(t, p)
 
-			//prevCounter, err := p.storage.GetCounter(pollCounterMetricName)
-			//assert.NoError(t, err)
-			//prevRandom, err := p.storage.GetGauge(randomValueMetricName)
-			//assert.NoError(t, err)
-
 			ctx, cancel := context.WithCancel(context.Background())
 
 			var wg sync.WaitGroup
