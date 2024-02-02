@@ -23,7 +23,7 @@ func (s *PostgresStorage) Store(metric *model.Metric) error {
 	if metric.Type == model.MetricTypeCounter {
 		_, err := s.conn.Exec(
 			context.Background(),
-			`INSERT INTO metrics.metrics_counter (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = $2`, metric.Name, metric.Counter,
+			`INSERT INTO metrics.metrics_counter (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = metrics_counter.value + $2`, metric.Name, metric.Counter,
 		)
 		if err != nil {
 			return err

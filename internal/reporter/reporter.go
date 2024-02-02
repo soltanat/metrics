@@ -1,38 +1,55 @@
 package reporter
 
 import (
+	"context"
 	"fmt"
+	"time"
+
+	"github.com/soltanat/metrics/internal/model"
 
 	"github.com/soltanat/metrics/internal"
 	"github.com/soltanat/metrics/internal/client"
 )
 
 type Reporter struct {
-	poller internal.Poll
-	client *client.Client
+	client      *client.Client
+	metricsChan chan *model.Metric
+	limitChan   chan struct{}
 }
 
-func New(poller internal.Poll, client *client.Client) *Reporter {
+func New(client *client.Client, metricsChan chan *model.Metric, limitChan chan struct{}) *Reporter {
 	reporter := &Reporter{
-		poller: poller,
-		client: client,
+		client:      client,
+		metricsChan: metricsChan,
+		limitChan:   limitChan,
 	}
 	return reporter
 }
 
-func (w *Reporter) Report() error {
-	metrics, err := w.poller.Get()
-	if err != nil {
-		return fmt.Errorf("get metrics error: %w", err)
+func (w *Reporter) Run(ctx context.Context, interval time.Duration) error {
+	ticker := time.NewTicker(interval)
+
+	var metrics []model.Metric
+
+	for {
+		select {
+		case <-ctx.Done():
+			ticker.Stop()
+			return nil
+		case <-ticker.C:
+			if len(metrics) == 0 {
+				continue
+			}
+			w.limitChan <- struct{}{}
+			err := internal.Backoff(func() error {
+				return w.client.Updates(metrics)
+			})
+			<-w.limitChan
+			if err != nil {
+				return fmt.Errorf("update metrics error: %w", err)
+			}
+		case m := <-w.metricsChan:
+			metrics = append(metrics, *m)
+		}
 	}
-	if len(metrics) == 0 {
-		return nil
-	}
-	err = internal.Backoff(func() error {
-		return w.client.Updates(metrics)
-	})
-	if err != nil {
-		return fmt.Errorf("update metrics error: %w", err)
-	}
-	return nil
 }

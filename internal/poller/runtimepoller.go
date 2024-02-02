@@ -1,13 +1,14 @@
 package poller
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"reflect"
 	"runtime"
+	"time"
 
 	"github.com/soltanat/metrics/internal/model"
-	"github.com/soltanat/metrics/internal/storage"
 )
 
 const (
@@ -16,85 +17,53 @@ const (
 )
 
 type RuntimePoller struct {
-	storage storage.Storage
+	metricsChan chan *model.Metric
 }
 
-func NewPoller() (*RuntimePoller, error) {
-	s := storage.NewMemStorage()
-
-	pollCounter := model.NewCounter(pollCounterMetricName, 0)
-	randomValue := model.NewGauge(randomValueMetricName, 0)
-
-	err := s.Store(pollCounter)
-	if err != nil {
-		return nil, err
-	}
-	err = s.Store(randomValue)
-	if err != nil {
-		return nil, err
-	}
-
-	poller := &RuntimePoller{storage: s}
-
-	return poller, nil
+func NewRuntimePoller(metricsChan chan *model.Metric) *RuntimePoller {
+	return &RuntimePoller{metricsChan: metricsChan}
 }
 
-func (p *RuntimePoller) Get() ([]model.Metric, error) {
-	return p.storage.GetList()
-}
+func (p *RuntimePoller) Run(ctx context.Context, interval time.Duration) error {
+	ticker := time.NewTicker(interval)
 
-func (p *RuntimePoller) Poll() error {
-	runtimeMetrics := &runtime.MemStats{}
-	runtime.ReadMemStats(runtimeMetrics)
+	for {
+		select {
+		case <-ctx.Done():
+			ticker.Stop()
+			return nil
+		case <-ticker.C:
+			runtimeMetrics := &runtime.MemStats{}
+			runtime.ReadMemStats(runtimeMetrics)
 
-	v := reflect.ValueOf(*runtimeMetrics)
-	t := v.Type()
+			v := reflect.ValueOf(*runtimeMetrics)
+			t := v.Type()
 
-	for i := 0; i < v.NumField(); i++ {
-		metricName := t.Field(i).Name
-		if _, ok := gaugeMetrics[metricName]; !ok {
-			continue
-		}
+			for i := 0; i < v.NumField(); i++ {
+				metricName := t.Field(i).Name
+				if _, ok := gaugeMetrics[metricName]; !ok {
+					continue
+				}
 
-		var metricValue float64
-		switch v.Field(i).Interface().(type) {
-		case uint64:
-			metricValue = float64(v.Field(i).Interface().(uint64))
-		case uint32:
-			metricValue = float64(v.Field(i).Interface().(uint32))
-		case float64:
-			metricValue = v.Field(i).Interface().(float64)
-		default:
-			return fmt.Errorf("unkonwn metric type %T", v.Field(i).Interface())
-		}
+				var metricValue float64
+				switch v.Field(i).Interface().(type) {
+				case uint64:
+					metricValue = float64(v.Field(i).Interface().(uint64))
+				case uint32:
+					metricValue = float64(v.Field(i).Interface().(uint32))
+				case float64:
+					metricValue = v.Field(i).Interface().(float64)
+				default:
+					return fmt.Errorf("unkonwn metric type %T", v.Field(i).Interface())
+				}
 
-		err := p.storage.Store(model.NewGauge(metricName, metricValue))
-		if err != nil {
-			return err
-		}
-	}
+				p.metricsChan <- model.NewGauge(metricName, metricValue)
+			}
 
-	if m, err := p.storage.GetGauge(randomValueMetricName); err != nil {
-		return err
-	} else {
-		m.SetGauge(rand.Float64())
-		err := p.storage.Store(m)
-		if err != nil {
-			return err
+			p.metricsChan <- model.NewGauge(randomValueMetricName, rand.Float64())
+			p.metricsChan <- model.NewCounter(pollCounterMetricName, 1)
 		}
 	}
-
-	if m, err := p.storage.GetCounter(pollCounterMetricName); err != nil {
-		return err
-	} else {
-		m.IncCounter()
-		err := p.storage.Store(m)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 var gaugeMetrics = map[string]struct{}{

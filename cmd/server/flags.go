@@ -16,6 +16,7 @@ var flagInterval int
 var flagPath string
 var flagRestore bool
 var flagDBAddr string
+var flagKey string
 
 type Config struct {
 	Addr     string `env:"ADDRESS"`
@@ -23,6 +24,7 @@ type Config struct {
 	Path     string `env:"FILE_STORAGE_PATH"`
 	Restore  bool   `env:"RESTORE"`
 	DBAddr   string `env:"DATABASE_DSN"`
+	Key      string `env:"KEY"`
 }
 
 func parseFlags() {
@@ -33,6 +35,7 @@ func parseFlags() {
 	flag.StringVar(&flagPath, "f", "/tmp/metrics-db.json", "path to store metrics")
 	flag.BoolVar(&flagRestore, "r", true, "restore metrics from file")
 	flag.StringVar(&flagDBAddr, "d", "", "database dsn")
+	flag.StringVar(&flagKey, "k", "", "key for signature")
 	flag.Parse()
 
 	var cfg Config
@@ -51,5 +54,8 @@ func parseFlags() {
 	}
 	if cfg.DBAddr != "" {
 		flagDBAddr = cfg.DBAddr
+	}
+	if cfg.Key != "" {
+		flagKey = cfg.Key
 	}
 }

@@ -1,12 +1,14 @@
 package internal
 
-import "github.com/soltanat/metrics/internal/model"
+import (
+	"context"
+	"time"
+)
 
 type Poll interface {
-	Get() ([]model.Metric, error)
-	Poll() error
+	Run(ctx context.Context, interval time.Duration) error
 }
 
 type Reporter interface {
-	Report() error
+	Run(ctx context.Context, interval time.Duration) error
 }

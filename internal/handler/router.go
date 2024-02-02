@@ -3,6 +3,8 @@ package handler
 import (
 	"strings"
 
+	"github.com/soltanat/metrics/internal/middleware/signature"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/ziflex/lecho/v3"
@@ -10,7 +12,7 @@ import (
 	"github.com/soltanat/metrics/internal/logger"
 )
 
-func SetupRoutes(h *Handlers) *echo.Echo {
+func SetupRoutes(h *Handlers, signatureKey string) *echo.Echo {
 	l := logger.Get()
 
 	e := echo.New()
@@ -36,6 +38,9 @@ func SetupRoutes(h *Handlers) *echo.Echo {
 		Level:     -1,
 		MinLength: 0,
 	}))
+	if signatureKey != "" {
+		e.Use(signature.SignatureMiddleware(signatureKey))
+	}
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:          true,
 		LogStatus:       true,

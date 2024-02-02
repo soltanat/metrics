@@ -3,6 +3,8 @@ package client
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/sha256"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -54,4 +56,30 @@ func (t *LoggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		Dur("latency", latency).
 		Msg("Request")
 	return resp, err
+}
+
+type SignatureTransport struct {
+	Transport http.RoundTripper
+	Key       string
+}
+
+func (t *SignatureTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	body := req.Body
+	defer body.Close()
+
+	buf := new(bytes.Buffer)
+	teeReader := io.TeeReader(body, buf)
+
+	hash := sha256.New()
+	_, err := io.Copy(hash, teeReader)
+	if err != nil {
+		return nil, err
+	}
+
+	hash.Write([]byte(t.Key))
+	req.Header.Set("HashSHA256", fmt.Sprintf("%x", hash.Sum(nil)))
+
+	req.Body = io.NopCloser(buf)
+
+	return t.Transport.RoundTrip(req)
 }

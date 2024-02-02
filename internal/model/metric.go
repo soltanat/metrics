@@ -32,10 +32,6 @@ func (m *Metric) IncCounter() {
 	m.Counter += 1
 }
 
-func (m *Metric) AddCounter(v int64) {
-	m.Counter += v
-}
-
 func (m *Metric) SetGauge(v float64) {
 	m.Gauge = v
 }

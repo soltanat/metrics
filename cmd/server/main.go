@@ -51,7 +51,6 @@ func main() {
 				l.Error().Err(err).Msg("unable to stop file storage")
 			}
 		}(fs)
-
 	} else {
 		err := db.ApplyMigrations(flagDBAddr)
 		if err != nil {
@@ -71,7 +70,7 @@ func main() {
 
 	h := handler.New(s, dbConn)
 
-	server := handler.SetupRoutes(h)
+	server := handler.SetupRoutes(h, flagKey)
 
 	go func() {
 		err := server.Start(flagAddr)

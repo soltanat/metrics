@@ -99,17 +99,7 @@ func (h *Handlers) Store(c echo.Context) error {
 		if err != nil {
 			return echo.ErrBadRequest
 		}
-
-		metric, err = h.storage.GetCounter(name)
-
-		if err != nil {
-			if !errors.Is(err, model.ErrMetricNotFound) {
-				return echo.ErrBadRequest
-			}
-			metric = model.NewCounter(name, 0)
-		}
-
-		metric.AddCounter(value)
+		metric = model.NewCounter(name, value)
 	}
 
 	err = h.storage.Store(metric)
@@ -191,16 +181,7 @@ func (h *Handlers) update(input Metrics) (*model.Metric, error) {
 			h.logger.Error().Msg("Missing delta for counter metric")
 			return nil, echo.ErrBadRequest
 		}
-		m, err := h.storage.GetCounter(input.ID)
-		if err != nil {
-			if !errors.Is(err, model.ErrMetricNotFound) {
-				h.logger.Error().Msgf("Error getting counter metric: %s", err)
-				return nil, echo.ErrBadRequest
-			}
-			m = model.NewCounter(input.ID, 0)
-		}
-		m.AddCounter(*input.Delta)
-		metric = m
+		metric = model.NewCounter(input.ID, *input.Delta)
 	default:
 		h.logger.Error().Msg("Unknown metric type")
 		return nil, echo.ErrBadRequest
