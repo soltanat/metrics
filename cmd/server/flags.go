@@ -12,6 +12,7 @@ import (
 )
 
 var flagAddr string
+var flagPprofAddr string
 var flagInterval int
 var flagPath string
 var flagRestore bool
@@ -31,6 +32,7 @@ func parseFlags() {
 	l := logger.Get()
 
 	flag.StringVar(&flagAddr, "a", "localhost:8080", "address and port metrics http server")
+	flag.StringVar(&flagPprofAddr, "p", "localhost:6060", "address and port pprof http server")
 	flag.IntVar(&flagInterval, "i", 300, "store metrics interval")
 	flag.StringVar(&flagPath, "f", "/tmp/metrics-db.json", "path to store metrics")
 	flag.BoolVar(&flagRestore, "r", true, "restore metrics from file")
