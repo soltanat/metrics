@@ -54,10 +54,18 @@ func (s *PostgresStorage) StoreBatch(metrics []model.Metric) error {
 		} else if m.Type == model.MetricTypeCounter {
 			batch.Queue(`INSERT INTO metrics.metrics_counter (name, value) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET value = metrics_counter.value + $2`, m.Name, m.Counter)
 		}
+		if batch.Len() > 1000 {
+			br := tx.SendBatch(ctx, batch)
+			err = br.Close()
+			if err != nil {
+				_ = tx.Rollback(ctx)
+				return err
+			}
+			batch = &pgx.Batch{}
+		}
 	}
 
 	br := tx.SendBatch(ctx, batch)
-
 	err = br.Close()
 	if err != nil {
 		_ = tx.Rollback(ctx)
