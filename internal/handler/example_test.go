@@ -44,6 +44,7 @@ func ExampleHandlers_GetList() {
 	if err != nil {
 		l.Fatal().Err(err).Msg("failed to do request")
 	}
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 	body, _ := io.ReadAll(resp.Body)
@@ -72,6 +73,7 @@ func ExampleHandlers_Store() {
 	if err != nil {
 		l.Fatal().Err(err).Msg("failed to do request")
 	}
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 	body, _ := io.ReadAll(resp.Body)
@@ -117,6 +119,7 @@ func ExampleHandlers_StoreMetricsBatch() {
 	if err != nil {
 		l.Fatal().Err(err).Msg("failed to do request")
 	}
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 	body, _ := io.ReadAll(resp.Body)
@@ -155,6 +158,7 @@ func ExampleHandlers_StoreMetrics() {
 	if err != nil {
 		l.Fatal().Err(err).Msg("failed to do request")
 	}
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 	body, _ := io.ReadAll(resp.Body)
@@ -197,6 +201,7 @@ func ExampleHandlers_Value() {
 	if err != nil {
 		l.Fatal().Err(err).Msg("failed to do request")
 	}
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 	body, _ := io.ReadAll(resp.Body)
@@ -229,6 +234,7 @@ func ExampleHandlers_Get() {
 	if err != nil {
 		l.Fatal().Err(err).Msg("failed to do request")
 	}
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 	body, _ := io.ReadAll(resp.Body)
