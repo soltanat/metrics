@@ -17,6 +17,8 @@ const (
 	cpuUtilization1MetricName = "CPUtilization1"
 )
 
+// GoPSUtilPoller
+// Реализует интерфейс Poll для сбора gopsutil метрик
 type GoPSUtilPoller struct {
 	metricsChan chan *model.Metric
 }
@@ -25,6 +27,10 @@ func NewGoPSUtilPoller(metricsChan chan *model.Metric) *GoPSUtilPoller {
 	return &GoPSUtilPoller{metricsChan: metricsChan}
 }
 
+// Run
+// Запускает сбор метрик
+// Передает собранные метрики в канал metricsChan
+// interval - интервал сбора метрик
 func (p *GoPSUtilPoller) Run(ctx context.Context, interval time.Duration) error {
 	ticker := time.NewTicker(interval)
 

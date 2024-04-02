@@ -5,6 +5,12 @@ import (
 	"strconv"
 )
 
+// Metric
+// Структура метрики
+// type: тип метрики (gauge, counter)
+// name: имя метрики
+// gauge: значение gauge
+// counter: значение counter
 type Metric struct {
 	Type    MetricType
 	Name    string
@@ -28,14 +34,20 @@ func NewCounter(name string, value int64) *Metric {
 	}
 }
 
+// IncCounter
+// Увеличивает значение counter
 func (m *Metric) IncCounter() {
 	m.Counter += 1
 }
 
+// SetGauge
+// Устанавливает значение gauge
 func (m *Metric) SetGauge(v float64) {
 	m.Gauge = v
 }
 
+// AsString
+// Возвращает строковое представление метрики
 func (m *Metric) AsString() string {
 	switch m.Type {
 	case MetricTypeGauge:
@@ -47,6 +59,8 @@ func (m *Metric) AsString() string {
 	return ""
 }
 
+// ValueAsString
+// Возвращает строковое представление значения
 func (m *Metric) ValueAsString() string {
 	switch m.Type {
 	case MetricTypeGauge:

@@ -4,6 +4,8 @@ import (
 	"github.com/soltanat/metrics/internal/model"
 )
 
+// Storage
+// Интерфейс хранилища метрик
 type Storage interface {
 	Store(metric *model.Metric) error
 	StoreBatch(metrics []model.Metric) error

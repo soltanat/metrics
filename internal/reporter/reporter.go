@@ -1,3 +1,4 @@
+// Package reporter
 package reporter
 
 import (
@@ -11,6 +12,8 @@ import (
 	"github.com/soltanat/metrics/internal/client"
 )
 
+// Reporter
+// Реализует интерфейс Reporter
 type Reporter struct {
 	client      *client.Client
 	metricsChan chan *model.Metric
@@ -26,6 +29,9 @@ func New(client *client.Client, metricsChan chan *model.Metric, limitChan chan s
 	return reporter
 }
 
+// Run
+// Запускает Reporter
+// Отправляет метрики в хранилище с помощью клиента, реализует отправку с повторными попытками и рейт лимитом
 func (w *Reporter) Run(ctx context.Context, interval time.Duration) error {
 	ticker := time.NewTicker(interval)
 

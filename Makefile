@@ -6,3 +6,8 @@ up:
 
 down:
 	docker-compose -f ./infra/docker-compose.yml down -v
+
+doc:
+	# http://localhost:8080/pkg/github.com/soltanat/metrics/?m=all
+	godoc -http=:8080
+

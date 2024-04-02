@@ -25,6 +25,7 @@ func New(s storage.Storage, dbConn db.Conn) *Handlers {
 	return &Handlers{storage: s, dbConn: dbConn, logger: logger.Get()}
 }
 
+// GetList возвращает все метрики
 func (h *Handlers) GetList(c echo.Context) error {
 	metrics, err := h.storage.GetList()
 	if err != nil {
@@ -39,6 +40,9 @@ func (h *Handlers) GetList(c echo.Context) error {
 	return nil
 }
 
+// Get возвращает метрику
+// metricType - тип метрики
+// metricName - имя метрики
 func (h *Handlers) Get(c echo.Context) error {
 	l := logger.Get()
 
@@ -71,6 +75,10 @@ func (h *Handlers) Get(c echo.Context) error {
 	return nil
 }
 
+// Store сохраняет метрику
+// metricType - тип метрики
+// metricName - имя метрики
+// metricValue - значение метрики
 func (h *Handlers) Store(c echo.Context) error {
 	l := logger.Get()
 
@@ -111,6 +119,8 @@ func (h *Handlers) Store(c echo.Context) error {
 	return nil
 }
 
+// StoreMetrics сохраняет метрику
+// Тело запроса должно содержать JSON со схемой Metrics
 func (h *Handlers) StoreMetrics(c echo.Context) error {
 	var metrics Metrics
 	if err := c.Bind(&metrics); err != nil {
@@ -133,6 +143,8 @@ func (h *Handlers) StoreMetrics(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
+// StoreMetricsBatch сохраняет метрики
+// Тело запроса должно содержать JSON список элементов Metrics
 func (h *Handlers) StoreMetricsBatch(c echo.Context) error {
 	var metrics []Metrics
 	if err := c.Bind(&metrics); err != nil {
@@ -190,6 +202,7 @@ func (h *Handlers) update(input Metrics) (*model.Metric, error) {
 	return metric, nil
 }
 
+// Value возвращает значение метрики
 func (h *Handlers) Value(c echo.Context) error {
 	var m Metrics
 	if err := c.Bind(&m); err != nil {
@@ -230,6 +243,9 @@ func (h *Handlers) Value(c echo.Context) error {
 	return c.JSON(http.StatusOK, m)
 }
 
+// Ping проверяет соединение с базой данных
+// Если соединение установлено возвращает 200
+// Если соединение не установлено возвращает 503
 func (h *Handlers) Ping(c echo.Context) error {
 	if h.dbConn == nil {
 		return c.NoContent(http.StatusServiceUnavailable)

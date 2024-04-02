@@ -11,6 +11,8 @@ import (
 	"github.com/soltanat/metrics/internal/model"
 )
 
+// PostgresStorage
+// Реализует хранилище метрик в PostgreSQL
 type PostgresStorage struct {
 	conn *pgxpool.Pool
 }
@@ -19,6 +21,9 @@ func NewPostgresStorage(conn *pgxpool.Pool) *PostgresStorage {
 	return &PostgresStorage{conn: conn}
 }
 
+// Store
+// Сохраняет метрику
+// Для counter добавляет значение, для gauge заменяет значение
 func (s *PostgresStorage) Store(metric *model.Metric) error {
 	if metric.Type == model.MetricTypeCounter {
 		_, err := s.conn.Exec(
@@ -40,6 +45,9 @@ func (s *PostgresStorage) Store(metric *model.Metric) error {
 	return nil
 }
 
+// StoreBatch
+// Сохраняет слайс метрик в транзакции
+// Для counter добавляет значения, для gauge заменяет значения
 func (s *PostgresStorage) StoreBatch(metrics []model.Metric) error {
 	ctx := context.Background()
 	tx, err := s.conn.BeginTx(ctx, pgx.TxOptions{})
@@ -80,6 +88,9 @@ func (s *PostgresStorage) StoreBatch(metrics []model.Metric) error {
 	return nil
 }
 
+// GetGauge
+// Возвращает метрику gauge по имени
+// Если метрики нет, возвращает ошибку model.ErrMetricNotFound
 func (s *PostgresStorage) GetGauge(name string) (*model.Metric, error) {
 	row := s.conn.QueryRow(context.Background(), "SELECT value FROM metrics.metrics_gauge WHERE name = $1", name)
 	var v float64
@@ -93,6 +104,9 @@ func (s *PostgresStorage) GetGauge(name string) (*model.Metric, error) {
 	return model.NewGauge(name, v), nil
 }
 
+// GetCounter
+// Возвращает метрику counter по имени
+// Если метрики нет, возвращает ошибку model.ErrMetricNotFound
 func (s *PostgresStorage) GetCounter(name string) (*model.Metric, error) {
 	row := s.conn.QueryRow(context.Background(), "SELECT value FROM metrics.metrics_counter WHERE name = $1", name)
 	var v int64
@@ -106,6 +120,8 @@ func (s *PostgresStorage) GetCounter(name string) (*model.Metric, error) {
 	return model.NewCounter(name, v), nil
 }
 
+// GetList
+// Возвращает слайс метрик
 func (s *PostgresStorage) GetList() ([]model.Metric, error) {
 	row, err := s.conn.Query(context.Background(), "SELECT name, value FROM metrics.metrics_gauge")
 	if err != nil {

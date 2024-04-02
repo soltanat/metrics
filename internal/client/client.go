@@ -1,3 +1,5 @@
+// Package client
+// Клиент для отправки метрик
 package client
 
 import (
@@ -38,11 +40,16 @@ func (e errUnexpectedResponse) Error() string {
 	return fmt.Sprintf("unexpected response: %d, %s", e.StatusCode, e.Message)
 }
 
+// Client
+// Клиент для отправки метрик
 type Client struct {
 	address string
 	client  *http.Client
 }
 
+// New
+// Создает новый клиент
+// address - адрес API
 func New(address string, transport http.RoundTripper) *Client {
 	return &Client{
 		address: address,
@@ -50,6 +57,8 @@ func New(address string, transport http.RoundTripper) *Client {
 	}
 }
 
+// Send
+// Отправляет метрику
 func (c *Client) Send(m *model.Metric) error {
 	if m.Name == "" {
 		return errValidationName
@@ -70,6 +79,8 @@ func (c *Client) Send(m *model.Metric) error {
 	return c.makeRequest(reqURL, "text/plain", http.NoBody)
 }
 
+// Update
+// Отправляет метрику
 func (c *Client) Update(m *model.Metric) error {
 	if m.Name == "" {
 		return errValidationName
@@ -98,6 +109,8 @@ func (c *Client) Update(m *model.Metric) error {
 	return c.makeRequest(reqURL, "application/json", body)
 }
 
+// Updates
+// Обновляет слайс метрик
 func (c *Client) Updates(metrics []model.Metric) error {
 	reqURL, _ := url.JoinPath(c.address, updatesEndpointPrefix)
 

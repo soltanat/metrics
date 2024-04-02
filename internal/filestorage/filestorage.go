@@ -1,3 +1,5 @@
+// Package filestorage
+// Декоратор Storage с сохранением данных на диск
 package filestorage
 
 import (
@@ -12,6 +14,8 @@ import (
 	"github.com/soltanat/metrics/internal/storage"
 )
 
+// FileStorage
+// Декоратор Storage с периодическим сохранением записанных данных на диск
 type FileStorage struct {
 	storage.Storage
 	file     *os.File
@@ -21,6 +25,10 @@ type FileStorage struct {
 	closeCh  chan struct{}
 }
 
+// New
+// Инициализирует FileStorage
+// path - путь к файлу
+// interval - периодичность сохранения данных, при interval = 0 данные сохраняются при каждом вызове Store
 func New(storage storage.Storage, interval time.Duration, path string) (*FileStorage, error) {
 	s := &FileStorage{
 		Storage:  storage,
@@ -38,6 +46,8 @@ func New(storage storage.Storage, interval time.Duration, path string) (*FileSto
 	return s, nil
 }
 
+// Restore
+// Восстанавливает данные в нижележащий Storage из файла
 func (s *FileStorage) Restore(restore bool) error {
 	if restore {
 		err := s.restore()
@@ -53,6 +63,9 @@ func (s *FileStorage) Restore(restore bool) error {
 	return nil
 }
 
+// Store
+// Сохраняет данные в нижележащий Storage
+// Если interval = 0 запускает flush
 func (s *FileStorage) Store(m *model.Metric) error {
 	err := s.Storage.Store(m)
 	if err != nil {
@@ -124,12 +137,16 @@ func (s *FileStorage) flush() error {
 	return nil
 }
 
+// Stop
+// Останавливает периодическое сохранение данных
 func (s *FileStorage) Stop() error {
 	s.stopCh <- struct{}{}
 	<-s.closeCh
 	return s.file.Close()
 }
 
+// Start
+// Запускает периодическое сохранение данных
 func (s *FileStorage) Start() error {
 	if s.interval == 0 {
 		return fmt.Errorf("interval is zero")

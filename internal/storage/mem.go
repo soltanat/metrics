@@ -6,6 +6,8 @@ import (
 	"github.com/soltanat/metrics/internal/model"
 )
 
+// MemStorage
+// Реализует хранилище метрик в памяти
 type MemStorage struct {
 	gauge   map[string]float64
 	counter map[string]int64
@@ -20,12 +22,18 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
+// Store
+// Сохраняет метрику
+// Для counter добавляет значение, для gauge заменяет значение
 func (s *MemStorage) Store(metric *model.Metric) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.store(metric)
 }
 
+// StoreBatch
+// Сохраняет слайс метрик
+// Для counter добавляет значения, для gauge заменяет значения
 func (s *MemStorage) StoreBatch(metrics []model.Metric) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -47,6 +55,8 @@ func (s *MemStorage) store(metric *model.Metric) error {
 	return nil
 }
 
+// GetGauge
+// Возвращает метрику gauge по имени
 func (s *MemStorage) GetGauge(name string) (*model.Metric, error) {
 	s.mu.RLock()
 	v, ok := s.gauge[name]
@@ -57,6 +67,8 @@ func (s *MemStorage) GetGauge(name string) (*model.Metric, error) {
 	return model.NewGauge(name, v), nil
 }
 
+// GetCounter
+// Возвращает метрику counter по имени
 func (s *MemStorage) GetCounter(name string) (*model.Metric, error) {
 	s.mu.RLock()
 	v, ok := s.counter[name]
@@ -67,6 +79,8 @@ func (s *MemStorage) GetCounter(name string) (*model.Metric, error) {
 	return model.NewCounter(name, v), nil
 }
 
+// GetList
+// Возвращает все метрики в виде слайса
 func (s *MemStorage) GetList() ([]model.Metric, error) {
 	s.mu.RLock()
 	metrics := make([]model.Metric, 0, len(s.counter)+len(s.gauge))
