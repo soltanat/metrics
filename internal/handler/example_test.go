@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/soltanat/metrics/internal/logger"
-	"github.com/soltanat/metrics/internal/model"
-	"github.com/soltanat/metrics/internal/storage"
 	"io"
 	"net/http"
 	"net/http/httptest"
+
+	"github.com/soltanat/metrics/internal/logger"
+	"github.com/soltanat/metrics/internal/model"
+	"github.com/soltanat/metrics/internal/storage"
 )
 
 var l = logger.Get()
