@@ -1,3 +1,5 @@
+// Package signature
+// Мидлвэр для подписи запроса
 package signature
 
 import (
@@ -12,6 +14,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// responseWriterWithHash
+// Реализация http.ResponseWriter с поддержкой подсчета хеша
 type responseWriterWithHash struct {
 	Writer     http.ResponseWriter
 	hash       hash.Hash
@@ -49,6 +53,8 @@ func (w *responseWriterWithHash) Close() error {
 	return nil
 }
 
+// SignatureMiddleware
+// Реализует мидлвэр, который проверяет подпись запроса, а так же добавляет подпись в заголовок ответа на основе тела ответа
 func SignatureMiddleware(key string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

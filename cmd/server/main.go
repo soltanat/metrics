@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -75,7 +77,14 @@ func main() {
 	go func() {
 		err := server.Start(flagAddr)
 		if err != nil {
-			l.Error().Err(err)
+			l.Error().Err(err).Msg("unable to start server")
+		}
+	}()
+
+	go func() {
+		err := http.ListenAndServe(flagPprofAddr, nil)
+		if err != nil {
+			l.Error().Err(err).Msg("unable to listen and serve")
 		}
 	}()
 

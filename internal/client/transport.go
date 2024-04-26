@@ -12,6 +12,8 @@ import (
 	"github.com/soltanat/metrics/internal/logger"
 )
 
+// GzipTransport
+// Транспорт для http клиента с gzip сжатием тела запроса
 type GzipTransport struct {
 	Transport http.RoundTripper
 }
@@ -39,6 +41,8 @@ func (t *GzipTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.Transport.RoundTrip(req)
 }
 
+// LoggingTransport
+// Транспорт для http клиента с логированием
 type LoggingTransport struct {
 	Transport http.RoundTripper
 }
@@ -58,6 +62,8 @@ func (t *LoggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	return resp, err
 }
 
+// SignatureTransport
+// Транспорт для http клиента с подписью запроса
 type SignatureTransport struct {
 	Transport http.RoundTripper
 	Key       string

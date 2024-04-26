@@ -16,6 +16,8 @@ const (
 	randomValueMetricName = "RandomValue"
 )
 
+// RuntimePoller
+// Реализует интерфейс Poll для сбора рантайм метрик
 type RuntimePoller struct {
 	metricsChan chan *model.Metric
 }
@@ -24,6 +26,9 @@ func NewRuntimePoller(metricsChan chan *model.Metric) *RuntimePoller {
 	return &RuntimePoller{metricsChan: metricsChan}
 }
 
+// Run
+// Запускает сбор метрик
+// interval - интервал сбора метрик
 func (p *RuntimePoller) Run(ctx context.Context, interval time.Duration) error {
 	ticker := time.NewTicker(interval)
 

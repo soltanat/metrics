@@ -5,6 +5,8 @@ import (
 	"github.com/soltanat/metrics/internal/model"
 )
 
+// BackoffPostgresStorage
+// Декоратор Storage с попытками повтороной обработки ошибок
 type BackoffPostgresStorage struct {
 	storage Storage
 }
