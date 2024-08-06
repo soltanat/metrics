@@ -20,6 +20,12 @@ import (
 	"github.com/soltanat/metrics/internal/reporter"
 )
 
+var (
+	buildVersion string = "N/A"
+	buildDate    string = "N/A"
+	buildCommit  string = "N/A"
+)
+
 func Run(
 	ctx context.Context, pollInterval, reportInterval time.Duration, pollers []internal.Poll, reporter internal.Reporter,
 ) {
@@ -66,6 +72,11 @@ func gracefulStop(ctx context.Context, cancelFunc context.CancelFunc) {
 }
 
 func main() {
+	l := logger.Get()
+	l.Printf("Build version: %s\n", buildVersion)
+	l.Printf("Build date: %s\n", buildDate)
+	l.Printf("Build commit: %s\n", buildCommit)
+
 	parseFlags()
 
 	metricsChan := make(chan *model.Metric)

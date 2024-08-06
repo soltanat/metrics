@@ -87,16 +87,16 @@ func (h *Handlers) Store(c echo.Context) error {
 	}
 	switch metricType {
 	case model.MetricTypeGauge:
-		value, err := strconv.ParseFloat(valueRaw, 64)
-		if err != nil {
+		value, parseErr := strconv.ParseFloat(valueRaw, 64)
+		if parseErr != nil {
 			return echo.ErrBadRequest
 		}
 
 		metric = model.NewGauge(name, value)
 
 	case model.MetricTypeCounter:
-		value, err := strconv.ParseInt(valueRaw, 10, 64)
-		if err != nil {
+		value, parseErr := strconv.ParseInt(valueRaw, 10, 64)
+		if parseErr != nil {
 			return echo.ErrBadRequest
 		}
 		metric = model.NewCounter(name, value)
