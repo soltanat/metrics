@@ -18,12 +18,22 @@ import (
 	"github.com/soltanat/metrics/internal/storage"
 )
 
+var (
+	buildVersion string = "N/A"
+	buildDate    string = "N/A"
+	buildCommit  string = "N/A"
+)
+
 func main() {
 	ctx := context.Background()
 
 	parseFlags()
 
 	l := logger.Get()
+
+	l.Printf("Build version: %s\n", buildVersion)
+	l.Printf("Build date: %s\n", buildDate)
+	l.Printf("Build commit: %s\n", buildCommit)
 
 	var s storage.Storage
 	var dbConn *pgxpool.Pool
