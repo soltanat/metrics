@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/soltanat/metrics/internal/middleware/decrypt"
 	"strings"
 
 	"github.com/soltanat/metrics/internal/middleware/signature"
@@ -12,7 +13,7 @@ import (
 	"github.com/soltanat/metrics/internal/logger"
 )
 
-func SetupRoutes(h *Handlers, signatureKey string) *echo.Echo {
+func SetupRoutes(h *Handlers, signatureKey string, privateKey []byte) (*echo.Echo, error) {
 	l := logger.Get()
 
 	e := echo.New()
@@ -60,14 +61,24 @@ func SetupRoutes(h *Handlers, signatureKey string) *echo.Echo {
 	}))
 	e.Use(middleware.Recover())
 
+	storeMetricsBatch := h.StoreMetricsBatch
+
+	if len(privateKey) > 0 {
+		rsaDecMiddleware, err := decrypt.RSADecryptMiddleware(privateKey)
+		if err != nil {
+			return nil, err
+		}
+		storeMetricsBatch = rsaDecMiddleware(storeMetricsBatch)
+	}
+
 	r := e.Router()
 	r.Add(echo.GET, "/", h.GetList)
 	r.Add(echo.GET, "/value/:metricType/:metricName/", h.Get)
 	r.Add(echo.POST, "/update/:metricType/:metricName/:metricValue/", h.Store)
 	r.Add(echo.POST, "/update/", h.StoreMetrics)
-	r.Add(echo.POST, "/updates/", h.StoreMetricsBatch)
+	r.Add(echo.POST, "/updates/", storeMetricsBatch)
 	r.Add(echo.POST, "/value/", h.Value)
 	r.Add(echo.GET, "/ping/", h.Ping)
 
-	return e
+	return e, nil
 }

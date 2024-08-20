@@ -18,14 +18,16 @@ var flagPath string
 var flagRestore bool
 var flagDBAddr string
 var flagKey string
+var flagCryptoKey string
 
 type Config struct {
-	Addr     string `env:"ADDRESS"`
-	Interval int    `env:"STORE_INTERVAL"`
-	Path     string `env:"FILE_STORAGE_PATH"`
-	Restore  bool   `env:"RESTORE"`
-	DBAddr   string `env:"DATABASE_DSN"`
-	Key      string `env:"KEY"`
+	Addr      string `env:"ADDRESS"`
+	Interval  int    `env:"STORE_INTERVAL"`
+	Path      string `env:"FILE_STORAGE_PATH"`
+	Restore   bool   `env:"RESTORE"`
+	DBAddr    string `env:"DATABASE_DSN"`
+	Key       string `env:"KEY"`
+	CryptoKey string `env:"CRYPTO_KEY"`
 }
 
 func parseFlags() {
@@ -38,6 +40,7 @@ func parseFlags() {
 	flag.BoolVar(&flagRestore, "r", true, "restore metrics from file")
 	flag.StringVar(&flagDBAddr, "d", "", "database dsn")
 	flag.StringVar(&flagKey, "k", "", "key for signature")
+	flag.StringVar(&flagCryptoKey, "crypto-key", "./private_key.pem", "crypto key")
 	flag.Parse()
 
 	var cfg Config
@@ -59,5 +62,8 @@ func parseFlags() {
 	}
 	if cfg.Key != "" {
 		flagKey = cfg.Key
+	}
+	if cfg.CryptoKey != "" {
+		flagCryptoKey = cfg.CryptoKey
 	}
 }

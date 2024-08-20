@@ -22,14 +22,15 @@ type RuntimePoller struct {
 	metricsChan chan *model.Metric
 }
 
-func NewRuntimePoller(metricsChan chan *model.Metric) *RuntimePoller {
+func NewRuntimePoller() *RuntimePoller {
+	metricsChan := make(chan *model.Metric)
 	return &RuntimePoller{metricsChan: metricsChan}
 }
 
 // Run
 // Запускает сбор метрик
 // interval - интервал сбора метрик
-func (p *RuntimePoller) Run(ctx context.Context, interval time.Duration) error {
+func (p *RuntimePoller) RunPoller(ctx context.Context, interval time.Duration) error {
 	ticker := time.NewTicker(interval)
 
 	for {
@@ -43,6 +44,8 @@ func (p *RuntimePoller) Run(ctx context.Context, interval time.Duration) error {
 
 			v := reflect.ValueOf(*runtimeMetrics)
 			t := v.Type()
+
+			metrics := make([]*model.Metric, 0)
 
 			for i := 0; i < v.NumField(); i++ {
 				metricName := t.Field(i).Name
@@ -62,13 +65,32 @@ func (p *RuntimePoller) Run(ctx context.Context, interval time.Duration) error {
 					return fmt.Errorf("unkonwn metric type %T", v.Field(i).Interface())
 				}
 
-				p.metricsChan <- model.NewGauge(metricName, metricValue)
+				metrics = append(metrics, model.NewGauge(metricName, metricValue))
 			}
 
-			p.metricsChan <- model.NewGauge(randomValueMetricName, rand.Float64())
-			p.metricsChan <- model.NewCounter(pollCounterMetricName, 1)
+			metrics = append(metrics, model.NewGauge(randomValueMetricName, rand.Float64()))
+			metrics = append(metrics, model.NewGauge(pollCounterMetricName, 1))
+
+			if err := p.sendMetric(ctx, metrics); err != nil {
+				return err
+			}
 		}
 	}
+}
+
+func (p *RuntimePoller) sendMetric(ctx context.Context, metric []*model.Metric) error {
+	for i := 0; i < len(metric); i++ {
+		select {
+		case p.metricsChan <- metric[i]:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return nil
+}
+
+func (p *RuntimePoller) GetChannel() chan *model.Metric {
+	return p.metricsChan
 }
 
 var gaugeMetrics = map[string]struct{}{

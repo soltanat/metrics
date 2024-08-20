@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -27,22 +28,33 @@ var (
 )
 
 func Run(
-	ctx context.Context, pollInterval, reportInterval time.Duration, pollers []internal.Poll, reporter internal.Reporter,
+	ctx context.Context,
+	pollInterval, reportInterval time.Duration,
+	pollers []internal.Poll,
+	reporter internal.Reporter,
 ) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	g := new(errgroup.Group)
-
 	go gracefulStop(ctx, cancel)
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	chs := make([]chan *model.Metric, len(pollers))
+	for i := 0; i < len(pollers); i++ {
+		chs = append(chs, pollers[i].GetChannel())
+	}
+	mergedCh := merge(chs...)
 
 	for i := 0; i < len(pollers); i++ {
 		i := i
 		g.Go(func() error {
-			return pollers[i].Run(ctx, pollInterval)
+			err := pollers[i].RunPoller(ctx, pollInterval)
+			return err
 		})
 		g.Go(func() error {
-			return reporter.Run(ctx, reportInterval)
+			err := reporter.RunReporter(ctx, reportInterval, mergedCh)
+			return err
 		})
 	}
 
@@ -79,23 +91,39 @@ func main() {
 
 	parseFlags()
 
-	metricsChan := make(chan *model.Metric)
-
-	runtimePollerInst := poller.NewRuntimePoller(metricsChan)
-	goPSUtilPollerInst := poller.NewGoPSUtilPoller(metricsChan)
+	runtimePollerInst := poller.NewRuntimePoller()
+	goPSUtilPollerInst := poller.NewGoPSUtilPoller()
 
 	pollers := []internal.Poll{runtimePollerInst, goPSUtilPollerInst}
 
 	addr := fmt.Sprintf("http://%s", flagAddr)
+
 	transport := http.DefaultTransport
+
 	transport = &client.GzipTransport{Transport: transport}
+
 	if flagKey != "" {
 		transport = &client.SignatureTransport{Transport: transport, Key: flagKey}
 	}
 	transport = &client.LoggingTransport{Transport: transport}
+
+	if flagCryptoKey != "" {
+		key, err := os.ReadFile(flagCryptoKey)
+		if err != nil {
+			l.Error().Msg("unable to read crypto key")
+			return
+		}
+
+		transport, err = client.NewRSAEncryptionTransport(transport, key)
+		if err != nil {
+			l.Error().Err(err).Msg("unable to create crypto transport")
+			return
+		}
+	}
+
 	cli := client.New(addr, transport)
 
-	reporterInst := reporter.New(cli, metricsChan, make(chan struct{}, flagRateLimit))
+	reporterInst := reporter.New(cli, make(chan struct{}, flagRateLimit))
 	Run(
 		context.Background(),
 		time.Second*time.Duration(flagPollInterval),
@@ -103,4 +131,26 @@ func main() {
 		pollers,
 		reporterInst,
 	)
+}
+
+func merge(cs ...chan *model.Metric) chan *model.Metric {
+	var wg sync.WaitGroup
+	out := make(chan *model.Metric)
+
+	output := func(c <-chan *model.Metric) {
+		for n := range c {
+			out <- n
+		}
+		wg.Done()
+	}
+	wg.Add(len(cs))
+	for _, c := range cs {
+		go output(c)
+	}
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+	return out
 }
