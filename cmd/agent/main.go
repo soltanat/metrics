@@ -69,7 +69,7 @@ func gracefulStop(ctx context.Context, cancelFunc context.CancelFunc) {
 	l := logger.Get()
 
 	exit := make(chan os.Signal, 1)
-	signal.Notify(exit, os.Interrupt, syscall.SIGTERM, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(exit, syscall.SIGTERM, syscall.SIGTERM, syscall.SIGQUIT)
 	l.Info().Msg("ran graceful shutdown goroutine")
 	select {
 	case <-exit:

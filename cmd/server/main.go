@@ -121,7 +121,7 @@ func main() {
 
 func gracefulShutdown() {
 	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(ch, syscall.SIGTERM, syscall.SIGTERM, syscall.SIGQUIT)
 	defer signal.Stop(ch)
 	<-ch
 }
