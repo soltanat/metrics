@@ -31,7 +31,10 @@ func ExampleHandlers_GetList() {
 
 	h := New(s, nil)
 
-	r := SetupRoutes(h, "")
+	r, err := SetupRoutes(h, "", []byte(""))
+	if err != nil {
+		l.Fatal().Err(err).Msg("failed to setup routes")
+	}
 	server := httptest.NewServer(r)
 	defer server.Close()
 
@@ -60,7 +63,10 @@ func ExampleHandlers_Store() {
 	s := storage.NewMemStorage()
 	h := New(s, nil)
 
-	r := SetupRoutes(h, "")
+	r, err := SetupRoutes(h, "", []byte(""))
+	if err != nil {
+		l.Fatal().Err(err).Msg("failed to setup routes")
+	}
 	server := httptest.NewServer(r)
 	defer server.Close()
 
@@ -87,7 +93,10 @@ func ExampleHandlers_StoreMetricsBatch() {
 	s := storage.NewMemStorage()
 	h := New(s, nil)
 
-	r := SetupRoutes(h, "")
+	r, err := SetupRoutes(h, "", []byte(""))
+	if err != nil {
+		l.Fatal().Err(err).Msg("failed to setup routes")
+	}
 	server := httptest.NewServer(r)
 	defer server.Close()
 
@@ -133,7 +142,10 @@ func ExampleHandlers_StoreMetrics() {
 	s := storage.NewMemStorage()
 	h := New(s, nil)
 
-	r := SetupRoutes(h, "")
+	r, err := SetupRoutes(h, "", []byte(""))
+	if err != nil {
+		l.Fatal().Err(err).Msg("failed to setup routes")
+	}
 	server := httptest.NewServer(r)
 	defer server.Close()
 
@@ -177,7 +189,10 @@ func ExampleHandlers_Value() {
 	})
 	h := New(s, nil)
 
-	r := SetupRoutes(h, "")
+	r, err := SetupRoutes(h, "", []byte(""))
+	if err != nil {
+		l.Fatal().Err(err).Msg("failed to setup routes")
+	}
 	server := httptest.NewServer(r)
 	defer server.Close()
 
@@ -221,7 +236,10 @@ func ExampleHandlers_Get() {
 	})
 	h := New(s, nil)
 
-	r := SetupRoutes(h, "")
+	r, err := SetupRoutes(h, "", []byte(""))
+	if err != nil {
+		l.Fatal().Err(err).Msg("failed to setup routes")
+	}
 	server := httptest.NewServer(r)
 	defer server.Close()
 

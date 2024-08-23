@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/soltanat/metrics/internal/model"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +19,7 @@ func TestNewPoller(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewRuntimePoller(make(chan *model.Metric))
+			got := NewRuntimePoller()
 			assert.NotNil(t, got)
 		})
 	}
@@ -35,8 +33,7 @@ func TestPeriodicRuntimePoller_poll(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metricsChan := make(chan *model.Metric)
-			p := NewRuntimePoller(metricsChan)
+			p := NewRuntimePoller()
 			assert.NotNil(t, p)
 
 			ctx, cancel := context.WithCancel(context.Background())
