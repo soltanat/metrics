@@ -42,7 +42,7 @@ jobs:
         with:
           repository: Yandex-Practicum/go-autotests
 #          latest: true
-          tag: 0.10.12
+          tag: v0.10.12
           fileName: "*"
           out-file-path: .tools
           token: ${{ secrets.GITHUB_TOKEN }}
