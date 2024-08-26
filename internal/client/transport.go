@@ -3,7 +3,11 @@ package client
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net/http"
@@ -86,6 +90,44 @@ func (t *SignatureTransport) RoundTrip(req *http.Request) (*http.Response, error
 	req.Header.Set("HashSHA256", fmt.Sprintf("%x", hash.Sum(nil)))
 
 	req.Body = io.NopCloser(buf)
+
+	return t.Transport.RoundTrip(req)
+}
+
+type RSAEncryptionTransport struct {
+	Transport http.RoundTripper
+	Key       *rsa.PublicKey
+}
+
+func NewRSAEncryptionTransport(transport http.RoundTripper, key []byte) (*RSAEncryptionTransport, error) {
+	block, _ := pem.Decode(key)
+	if block == nil || block.Type != "RSA PUBLIC KEY" {
+		return nil, fmt.Errorf("invalid block type")
+	}
+
+	pubKey, err := x509.ParsePKCS1PublicKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse public key: %v", err)
+	}
+
+	return &RSAEncryptionTransport{
+		Transport: transport,
+		Key:       pubKey,
+	}, nil
+}
+
+func (t *RSAEncryptionTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	bodyBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	cipherText, err := rsa.EncryptPKCS1v15(rand.Reader, t.Key, bodyBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Body = io.NopCloser(bytes.NewBuffer(cipherText))
 
 	return t.Transport.RoundTrip(req)
 }

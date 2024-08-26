@@ -82,7 +82,20 @@ func main() {
 
 	h := handler.New(s, dbConn)
 
-	server := handler.SetupRoutes(h, flagKey)
+	var key []byte
+	if flagCryptoKey != "" {
+		var err error
+		key, err = os.ReadFile(flagCryptoKey)
+		if err != nil {
+			l.Error().Msg("unable to read crypto key")
+			return
+		}
+	}
+
+	server, err := handler.SetupRoutes(h, flagKey, key)
+	if err != nil {
+		l.Fatal().Err(err).Msg("unable to setup routes")
+	}
 
 	go func() {
 		err := server.Start(flagAddr)
@@ -100,7 +113,7 @@ func main() {
 
 	gracefulShutdown()
 
-	err := server.Close()
+	err = server.Close()
 	if err != nil {
 		l.Error().Err(err).Msg("unable to close server")
 	}
@@ -108,7 +121,7 @@ func main() {
 
 func gracefulShutdown() {
 	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(ch, syscall.SIGTERM, syscall.SIGTERM, syscall.SIGQUIT)
 	defer signal.Stop(ch)
 	<-ch
 }

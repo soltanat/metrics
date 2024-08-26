@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	maxRetries   = 3
+	maxRetries   = 5
 	initialDelay = time.Second
 	maxDelay     = time.Second * 5
 )

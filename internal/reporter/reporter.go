@@ -15,16 +15,14 @@ import (
 // Reporter
 // Реализует интерфейс Reporter
 type Reporter struct {
-	client      *client.Client
-	metricsChan chan *model.Metric
-	limitChan   chan struct{}
+	client    *client.Client
+	limitChan chan struct{}
 }
 
-func New(client *client.Client, metricsChan chan *model.Metric, limitChan chan struct{}) *Reporter {
+func New(client *client.Client, limitChan chan struct{}) *Reporter {
 	reporter := &Reporter{
-		client:      client,
-		metricsChan: metricsChan,
-		limitChan:   limitChan,
+		client:    client,
+		limitChan: limitChan,
 	}
 	return reporter
 }
@@ -32,7 +30,7 @@ func New(client *client.Client, metricsChan chan *model.Metric, limitChan chan s
 // Run
 // Запускает Reporter
 // Отправляет метрики в хранилище с помощью клиента, реализует отправку с повторными попытками и рейт лимитом
-func (w *Reporter) Run(ctx context.Context, interval time.Duration) error {
+func (w *Reporter) RunReporter(ctx context.Context, interval time.Duration, ch chan *model.Metric) error {
 	ticker := time.NewTicker(interval)
 
 	var metrics []model.Metric
@@ -48,13 +46,25 @@ func (w *Reporter) Run(ctx context.Context, interval time.Duration) error {
 			}
 			w.limitChan <- struct{}{}
 			err := internal.Backoff(func() error {
-				return w.client.Updates(metrics)
+				for i := 0; i < len(metrics); i++ {
+					chunk := 10
+					if i+chunk > len(metrics) {
+						chunk = len(metrics) - i
+					}
+					err := w.client.Updates(metrics[i : i+chunk])
+					if err != nil {
+						return err
+					}
+					i += chunk
+				}
+				return nil
 			})
 			<-w.limitChan
 			if err != nil {
 				return fmt.Errorf("update metrics error: %w", err)
 			}
-		case m := <-w.metricsChan:
+			metrics = metrics[:0]
+		case m := <-ch:
 			metrics = append(metrics, *m)
 		}
 	}

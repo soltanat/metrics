@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"os"
@@ -18,14 +19,18 @@ var flagPath string
 var flagRestore bool
 var flagDBAddr string
 var flagKey string
+var flagCryptoKey string
+var flagConfig string
 
 type Config struct {
-	Addr     string `env:"ADDRESS"`
-	Interval int    `env:"STORE_INTERVAL"`
-	Path     string `env:"FILE_STORAGE_PATH"`
-	Restore  bool   `env:"RESTORE"`
-	DBAddr   string `env:"DATABASE_DSN"`
-	Key      string `env:"KEY"`
+	Addr      string `env:"ADDRESS" json:"addr"`
+	Interval  int    `env:"STORE_INTERVAL" json:"interval"`
+	Path      string `env:"FILE_STORAGE_PATH" json:"path"`
+	Restore   bool   `env:"RESTORE" json:"restore"`
+	DBAddr    string `env:"DATABASE_DSN" json:"db_addr"`
+	Key       string `env:"KEY" json:"key"`
+	CryptoKey string `env:"CRYPTO_KEY" json:"crypto_key"`
+	Config    string `env:"CONFIG"`
 }
 
 func parseFlags() {
@@ -38,6 +43,8 @@ func parseFlags() {
 	flag.BoolVar(&flagRestore, "r", true, "restore metrics from file")
 	flag.StringVar(&flagDBAddr, "d", "", "database dsn")
 	flag.StringVar(&flagKey, "k", "", "key for signature")
+	flag.StringVar(&flagCryptoKey, "crypto-key", "./private_key.pem", "crypto key")
+	flag.StringVar(&flagConfig, "config", "", "config path")
 	flag.Parse()
 
 	var cfg Config
@@ -59,5 +66,41 @@ func parseFlags() {
 	}
 	if cfg.Key != "" {
 		flagKey = cfg.Key
+	}
+	if cfg.CryptoKey != "" {
+		flagCryptoKey = cfg.CryptoKey
+	}
+
+	if cfg.Config != "" {
+		flagConfig = cfg.Config
+	}
+	if flagConfig != "" {
+		_, err := os.Stat(flagConfig)
+		if err != nil {
+			l.Fatal().Err(err)
+		}
+
+		f, err := os.ReadFile(flagConfig)
+		if err != nil {
+			l.Fatal().Err(err)
+		}
+		jsonConfig := Config{}
+		err = json.Unmarshal(f, &jsonConfig)
+		if err != nil {
+			l.Fatal().Err(err)
+		}
+
+		if flagAddr == "" && jsonConfig.Addr != "" {
+			flagAddr = jsonConfig.Addr
+		}
+		if flagDBAddr == "" && jsonConfig.DBAddr != "" {
+			flagDBAddr = jsonConfig.DBAddr
+		}
+		if flagKey == "" && jsonConfig.Key != "" {
+			flagKey = jsonConfig.Key
+		}
+		if flagCryptoKey == "" && jsonConfig.CryptoKey != "" {
+			flagCryptoKey = jsonConfig.CryptoKey
+		}
 	}
 }
