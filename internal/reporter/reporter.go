@@ -3,6 +3,7 @@ package reporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -53,12 +54,15 @@ func (w *Reporter) RunReporter(ctx context.Context, interval time.Duration, ch c
 					}
 					err := w.client.Updates(metrics[i : i+chunk])
 					if err != nil {
+						if errors.Is(err, client.ErrForbidden) {
+							return model.ErrForbidden
+						}
 						return err
 					}
 					i += chunk
 				}
 				return nil
-			})
+			}, model.ErrForbidden)
 			<-w.limitChan
 			if err != nil {
 				return fmt.Errorf("update metrics error: %w", err)

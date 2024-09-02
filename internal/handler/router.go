@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/soltanat/metrics/internal/middleware/decrypt"
+	"github.com/soltanat/metrics/internal/middleware/trustedsubnet"
 	"strings"
 
 	"github.com/soltanat/metrics/internal/middleware/signature"
@@ -13,7 +14,7 @@ import (
 	"github.com/soltanat/metrics/internal/logger"
 )
 
-func SetupRoutes(h *Handlers, signatureKey string, privateKey []byte) (*echo.Echo, error) {
+func SetupRoutes(h *Handlers, signatureKey string, privateKey []byte, trustedSubnet string) (*echo.Echo, error) {
 	l := logger.Get()
 
 	e := echo.New()
@@ -62,6 +63,14 @@ func SetupRoutes(h *Handlers, signatureKey string, privateKey []byte) (*echo.Ech
 	e.Use(middleware.Recover())
 
 	storeMetricsBatch := h.StoreMetricsBatch
+
+	if len(trustedSubnet) > 0 {
+		trustedSubnetMiddleware, err := trustedsubnet.Middleware(trustedSubnet)
+		if err != nil {
+			return nil, err
+		}
+		storeMetricsBatch = trustedSubnetMiddleware(storeMetricsBatch)
+	}
 
 	if len(privateKey) > 0 {
 		rsaDecMiddleware, err := decrypt.RSADecryptMiddleware(privateKey)

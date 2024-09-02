@@ -92,7 +92,7 @@ func main() {
 		}
 	}
 
-	server, err := handler.SetupRoutes(h, flagKey, key)
+	server, err := handler.SetupRoutes(h, flagKey, key, flagTrustedSubnet)
 	if err != nil {
 		l.Fatal().Err(err).Msg("unable to setup routes")
 	}

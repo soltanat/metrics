@@ -23,6 +23,8 @@ const (
 
 var errValidationName = fmt.Errorf("min name len 1")
 
+var ErrForbidden = fmt.Errorf("forbidden")
+
 type errHTTP struct {
 	Err error
 }
@@ -158,6 +160,9 @@ func (c *Client) makeRequest(url string, contentType string, body io.Reader) err
 		err = resp.Body.Close()
 		if err != nil {
 			return fmt.Errorf("close body error: %v, status code: %d", err, resp.StatusCode)
+		}
+		if resp.StatusCode == http.StatusForbidden {
+			return ErrForbidden
 		}
 		return errUnexpectedResponse{
 			StatusCode: resp.StatusCode,

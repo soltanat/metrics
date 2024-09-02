@@ -121,6 +121,8 @@ func main() {
 		}
 	}
 
+	transport = &client.XRealIPTransport{Transport: transport}
+
 	cli := client.New(addr, transport)
 
 	reporterInst := reporter.New(cli, make(chan struct{}, flagRateLimit))

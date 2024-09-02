@@ -62,8 +62,10 @@ Accept: text/plain
 Accept-Encoding: gzip
 
 
+
+
 ###
-POST http://{{address}}/updates
+POST http://{{address}}/updates/
 Content-Type: application/json
 
 [

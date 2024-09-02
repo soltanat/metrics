@@ -58,10 +58,16 @@ func (t *LoggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 
 	l := logger.Get()
 
+	var statusCode string
+	if resp != nil {
+		statusCode = resp.Status
+	}
+
 	l.Info().
 		Str("method", req.Method).
 		Str("url", req.URL.String()).
 		Dur("latency", latency).
+		Str("status", statusCode).
 		Msg("Request")
 	return resp, err
 }
@@ -129,5 +135,14 @@ func (t *RSAEncryptionTransport) RoundTrip(req *http.Request) (*http.Response, e
 
 	req.Body = io.NopCloser(bytes.NewBuffer(cipherText))
 
+	return t.Transport.RoundTrip(req)
+}
+
+type XRealIPTransport struct {
+	Transport http.RoundTripper
+}
+
+func (t *XRealIPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	//req.Header.Set("X-Real-IP", req.RemoteAddr)
 	return t.Transport.RoundTrip(req)
 }
