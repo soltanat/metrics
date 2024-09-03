@@ -17,16 +17,8 @@ func (e ErrBadRequest) Error() string {
 	return e.Err.Error()
 }
 
-type ErrNotValidMetricType struct {
-	Type string
-	ErrBadRequest
-}
-
-func (e ErrNotValidMetricType) Error() string {
-	return fmt.Sprintf("error parsing metric type %s: %s", e.Type, e.ErrBadRequest.Error())
-}
-
 var (
 	ErrMissingGaugeValue   = ErrBadRequest{Err: fmt.Errorf("missing gauge value")}
 	ErrMissingCounterDelta = ErrBadRequest{Err: fmt.Errorf("missing counter delta")}
+	ErrNotValidMetricType  = ErrBadRequest{Err: fmt.Errorf("not valid metric type")}
 )

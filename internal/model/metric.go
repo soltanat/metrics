@@ -42,7 +42,7 @@ func NewMetric(input InputMetric) (*Metric, error) {
 
 	metricType, err := ParseMetricType(input.Type())
 	if err != nil {
-		return nil, ErrNotValidMetricType{Type: input.Type(), ErrBadRequest: ErrBadRequest{Err: err}}
+		return nil, ErrNotValidMetricType
 	}
 
 	switch metricType {
@@ -57,9 +57,7 @@ func NewMetric(input InputMetric) (*Metric, error) {
 		}
 		metric = NewCounter(input.ID(), *input.Delta())
 	default:
-		return nil, ErrNotValidMetricType{
-			Type: input.Type(), ErrBadRequest: ErrBadRequest{Err: fmt.Errorf("unknown metric type")},
-		}
+		return nil, ErrNotValidMetricType
 	}
 
 	return metric, nil

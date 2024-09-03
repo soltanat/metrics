@@ -130,7 +130,13 @@ func (h *Handlers) StoreMetrics(c echo.Context) error {
 
 	metric, err := model.NewMetric(metrics)
 	if err != nil {
-		return err
+		var errBadRequest model.ErrBadRequest
+		if errors.As(err, &errBadRequest) {
+			h.logger.Error().Err(err).Msg("Error parsing metrics")
+			return echo.ErrBadRequest
+		}
+		h.logger.Error().Msgf("Error parsing metrics: %s", err)
+		return echo.ErrInternalServerError
 	}
 
 	if err := h.storage.Store(metric); err != nil {
@@ -158,6 +164,8 @@ func (h *Handlers) StoreMetricsBatch(c echo.Context) error {
 			h.logger.Error().Err(err).Msg("Error parsing metrics")
 			return echo.ErrBadRequest
 		}
+		h.logger.Error().Msgf("Error parsing metrics: %s", err)
+		return echo.ErrInternalServerError
 	}
 
 	if err := h.storage.StoreBatch(mm); err != nil {
