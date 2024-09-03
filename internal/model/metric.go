@@ -52,7 +52,7 @@ func NewMetric(input InputMetric) (*Metric, error) {
 		}
 		metric = NewGauge(input.ID(), *input.Value())
 	case MetricTypeCounter:
-		if input.Delta == nil {
+		if input.Delta() == nil {
 			return nil, ErrMissingCounterDelta
 		}
 		metric = NewCounter(input.ID(), *input.Delta())

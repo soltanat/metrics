@@ -31,7 +31,7 @@ func ExampleHandlers_GetList() {
 
 	h := New(s, nil)
 
-	r, err := SetupRoutes(h, "", []byte(""))
+	r, err := SetupRoutes(h, "", []byte(""), "")
 	if err != nil {
 		l.Fatal().Err(err).Msg("failed to setup routes")
 	}
@@ -63,7 +63,7 @@ func ExampleHandlers_Store() {
 	s := storage.NewMemStorage()
 	h := New(s, nil)
 
-	r, err := SetupRoutes(h, "", []byte(""))
+	r, err := SetupRoutes(h, "", []byte(""), "")
 	if err != nil {
 		l.Fatal().Err(err).Msg("failed to setup routes")
 	}
@@ -93,7 +93,7 @@ func ExampleHandlers_StoreMetricsBatch() {
 	s := storage.NewMemStorage()
 	h := New(s, nil)
 
-	r, err := SetupRoutes(h, "", []byte(""))
+	r, err := SetupRoutes(h, "", []byte(""), "")
 	if err != nil {
 		l.Fatal().Err(err).Msg("failed to setup routes")
 	}
@@ -142,7 +142,7 @@ func ExampleHandlers_StoreMetrics() {
 	s := storage.NewMemStorage()
 	h := New(s, nil)
 
-	r, err := SetupRoutes(h, "", []byte(""))
+	r, err := SetupRoutes(h, "", []byte(""), "")
 	if err != nil {
 		l.Fatal().Err(err).Msg("failed to setup routes")
 	}
@@ -189,7 +189,7 @@ func ExampleHandlers_Value() {
 	})
 	h := New(s, nil)
 
-	r, err := SetupRoutes(h, "", []byte(""))
+	r, err := SetupRoutes(h, "", []byte(""), "")
 	if err != nil {
 		l.Fatal().Err(err).Msg("failed to setup routes")
 	}
@@ -236,7 +236,7 @@ func ExampleHandlers_Get() {
 	})
 	h := New(s, nil)
 
-	r, err := SetupRoutes(h, "", []byte(""))
+	r, err := SetupRoutes(h, "", []byte(""), "")
 	if err != nil {
 		l.Fatal().Err(err).Msg("failed to setup routes")
 	}

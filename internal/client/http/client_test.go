@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -63,6 +64,8 @@ func TestMetricsClient_Send(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.metric.Name, func(t *testing.T) {
+			ctx := context.Background()
+
 			server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				assert.Equal(t, req.URL.String(), tt.expectedPath)
 				assert.Equal(t, req.Header.Get("content-type"), "text/plain")
@@ -71,7 +74,7 @@ func TestMetricsClient_Send(t *testing.T) {
 			defer server.Close()
 
 			api := Client{server.URL, http.DefaultClient}
-			err := api.Send(nil, tt.metric)
+			err := api.Send(ctx, tt.metric)
 
 			assert.NoError(t, err)
 		})
@@ -90,8 +93,9 @@ func TestMetricsClient_Send_IncorrectName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			api := Client{"http://localhost:8080", http.DefaultClient}
-			err := api.Send(nil, tt.metric)
+			err := api.Send(ctx, tt.metric)
 			assert.Error(t, err, errValidationName)
 		})
 	}
@@ -114,9 +118,9 @@ func TestMetricsClient_Send_ServerErrors(t *testing.T) {
 				_, _ = rw.Write([]byte("error"))
 			}))
 			defer server.Close()
-
+			ctx := context.Background()
 			api := Client{server.URL, http.DefaultClient}
-			err := api.Send(nil, tt.metric)
+			err := api.Send(ctx, tt.metric)
 
 			assert.Error(t, err, errUnexpectedResponse{
 				StatusCode: 500,
@@ -138,9 +142,10 @@ func TestMetricsClient_Send_AddressError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 
 			api := Client{"http://bad_address", http.DefaultClient}
-			err := api.Send(nil, tt.metric)
+			err := api.Send(ctx, tt.metric)
 
 			var expectedErr errHTTP
 			assert.ErrorAs(t, err, &expectedErr)
@@ -215,7 +220,9 @@ func TestUpdate(t *testing.T) {
 
 			c.address = server.URL
 
-			err := c.Update(nil, tt.m)
+			ctx := context.Background()
+
+			err := c.Update(ctx, tt.m)
 			if tt.expectedErr != nil {
 				assert.Error(t, err, tt.expectedErr, "Expected error: %v", tt.expectedErr)
 			} else {

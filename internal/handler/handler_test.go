@@ -94,7 +94,7 @@ func TestHandlers_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := New(tt.mockedFields.storage, tt.mockedFields.db)
-			r, err := SetupRoutes(h, "", []byte(""))
+			r, err := SetupRoutes(h, "", []byte(""), "")
 			require.NoError(t, err)
 			srv := httptest.NewServer(r)
 			defer srv.Close()
@@ -188,7 +188,7 @@ func TestHandlers_Store(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := New(tt.mockedFields.storage, tt.mockedFields.db)
-			r, err := SetupRoutes(h, "", []byte(""))
+			r, err := SetupRoutes(h, "", []byte(""), "")
 			require.NoError(t, err)
 			srv := httptest.NewServer(r)
 			defer srv.Close()
@@ -250,7 +250,7 @@ func TestHandlers_GetList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := New(tt.mockedFields.storage, tt.mockedFields.db)
-			r, err := SetupRoutes(h, "", []byte(""))
+			r, err := SetupRoutes(h, "", []byte(""), "")
 			require.NoError(t, err)
 			srv := httptest.NewServer(r)
 			defer srv.Close()
@@ -285,7 +285,7 @@ func TestHandlers_StoreMetrics(t *testing.T) {
 		storage: mockStorage,
 	}
 
-	r, err := SetupRoutes(h, "", []byte(""))
+	r, err := SetupRoutes(h, "", []byte(""), "")
 	require.NoError(t, err)
 	server := httptest.NewServer(r)
 
@@ -426,7 +426,7 @@ func TestHandlers_Value(t *testing.T) {
 		storage: mockStorage,
 	}
 
-	r, err := SetupRoutes(h, "", []byte(""))
+	r, err := SetupRoutes(h, "", []byte(""), "")
 	require.NoError(t, err)
 	server := httptest.NewServer(r)
 
@@ -522,7 +522,7 @@ func TestHandlers_Ping(t *testing.T) {
 		dbConn:  mockDB,
 	}
 
-	r, err := SetupRoutes(h, "", []byte(""))
+	r, err := SetupRoutes(h, "", []byte(""), "")
 	require.NoError(t, err)
 	server := httptest.NewServer(r)
 

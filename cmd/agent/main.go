@@ -128,7 +128,7 @@ func main() {
 
 	_ = http2.New(addr, transport)
 
-	conn, err := grpc.Dial(
+	conn, err := grpc.NewClient(
 		flagGRPCServerAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(grpc2.LoggingInterceptor),
