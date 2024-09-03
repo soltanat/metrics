@@ -128,9 +128,15 @@ func (h *Handlers) StoreMetrics(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	metric, err := h.update(metrics)
+	metric, err := model.NewMetric(metrics)
 	if err != nil {
-		return err
+		var errBadRequest model.ErrBadRequest
+		if errors.As(err, &errBadRequest) {
+			h.logger.Error().Err(err).Msg("Error parsing metrics")
+			return echo.ErrBadRequest
+		}
+		h.logger.Error().Msgf("Error parsing metrics: %s", err)
+		return echo.ErrInternalServerError
 	}
 
 	if err := h.storage.Store(metric); err != nil {
@@ -152,16 +158,17 @@ func (h *Handlers) StoreMetricsBatch(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	metricsToStore := make([]model.Metric, 0, len(metrics))
-	for _, m := range metrics {
-		metric, err := h.update(m)
-		if err != nil {
-			return err
+	mm, err := model.NewMetrics(ConvertToInterfaces(metrics))
+	if err != nil {
+		if errors.As(err, &model.ErrBadRequest{}) {
+			h.logger.Error().Err(err).Msg("Error parsing metrics")
+			return echo.ErrBadRequest
 		}
-		metricsToStore = append(metricsToStore, *metric)
+		h.logger.Error().Msgf("Error parsing metrics: %s", err)
+		return echo.ErrInternalServerError
 	}
 
-	if err := h.storage.StoreBatch(metricsToStore); err != nil {
+	if err := h.storage.StoreBatch(mm); err != nil {
 		h.logger.Error().Msgf("Error storing metric: %s", err)
 		return echo.ErrInternalServerError
 	}
@@ -169,37 +176,6 @@ func (h *Handlers) StoreMetricsBatch(c echo.Context) error {
 	h.logger.Info().Msg("Metrics stored successfully")
 
 	return c.NoContent(http.StatusOK)
-
-}
-
-func (h *Handlers) update(input Metrics) (*model.Metric, error) {
-	var metric *model.Metric
-
-	metricType, err := model.ParseMetricType(input.MType)
-	if err != nil {
-		h.logger.Error().Err(err).Msg("Error parsing metric type")
-		return nil, echo.ErrBadRequest
-	}
-
-	switch metricType {
-	case model.MetricTypeGauge:
-		if input.Value == nil {
-			h.logger.Error().Msg("Missing value for gauge metric")
-			return nil, echo.ErrBadRequest
-		}
-		metric = model.NewGauge(input.ID, *input.Value)
-	case model.MetricTypeCounter:
-		if input.Delta == nil {
-			h.logger.Error().Msg("Missing delta for counter metric")
-			return nil, echo.ErrBadRequest
-		}
-		metric = model.NewCounter(input.ID, *input.Delta)
-	default:
-		h.logger.Error().Msg("Unknown metric type")
-		return nil, echo.ErrBadRequest
-	}
-
-	return metric, nil
 }
 
 // Value возвращает значение метрики
@@ -225,7 +201,7 @@ func (h *Handlers) Value(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	metric, err = metricFunc(m.ID)
+	metric, err = metricFunc(m.MID)
 	if err != nil {
 		if errors.Is(err, model.ErrMetricNotFound) {
 			return echo.ErrNotFound
@@ -235,9 +211,9 @@ func (h *Handlers) Value(c echo.Context) error {
 
 	switch metricType {
 	case model.MetricTypeGauge:
-		m.Value = &metric.Gauge
+		m.MValue = &metric.Gauge
 	case model.MetricTypeCounter:
-		m.Delta = &metric.Counter
+		m.MDelta = &metric.Counter
 	}
 
 	return c.JSON(http.StatusOK, m)

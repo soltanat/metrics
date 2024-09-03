@@ -20,6 +20,7 @@ var flagKey string
 var flagRateLimit int
 var flagCryptoKey string
 var flagConfig string
+var flagGRPCServerAddr string
 
 type Config struct {
 	Addr           string `env:"ADDRESS" json:"addr"`
@@ -29,6 +30,7 @@ type Config struct {
 	RateLimit      int    `env:"RATE_LIMIT" json:"rate_limit"`
 	CryptoKey      string `env:"CRYPTO_KEY" json:"crypto_key"`
 	Config         string `env:"CONFIG"`
+	GRPCServerAddr string `env:"GRPC_SERVER_ADDR" json:"grpc_server_addr"`
 }
 
 func parseFlags() {
@@ -41,6 +43,7 @@ func parseFlags() {
 	flag.IntVar(&flagRateLimit, "l", 1, "rate limit")
 	flag.StringVar(&flagCryptoKey, "crypto-key", "./public_key.pem", "crypto key")
 	flag.StringVar(&flagConfig, "config", "", "config path")
+	flag.StringVar(&flagGRPCServerAddr, "g", ":9090", "grpc server address")
 	flag.Parse()
 
 	var cfg Config
@@ -74,6 +77,9 @@ func parseFlags() {
 	}
 	if cfg.CryptoKey != "" {
 		flagCryptoKey = cfg.CryptoKey
+	}
+	if cfg.GRPCServerAddr != "" {
+		flagGRPCServerAddr = cfg.GRPCServerAddr
 	}
 
 	if cfg.Config != "" {
@@ -112,6 +118,9 @@ func parseFlags() {
 		}
 		if flagCryptoKey == "" && jsonConfig.CryptoKey != "" {
 			flagCryptoKey = jsonConfig.CryptoKey
+		}
+		if flagGRPCServerAddr == "" && jsonConfig.GRPCServerAddr != "" {
+			flagGRPCServerAddr = jsonConfig.GRPCServerAddr
 		}
 	}
 }

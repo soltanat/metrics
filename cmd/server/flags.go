@@ -12,25 +12,31 @@ import (
 	"github.com/soltanat/metrics/internal/logger"
 )
 
-var flagAddr string
-var flagPprofAddr string
-var flagInterval int
-var flagPath string
-var flagRestore bool
-var flagDBAddr string
-var flagKey string
-var flagCryptoKey string
-var flagConfig string
+var (
+	flagAddr           string
+	flagPprofAddr      string
+	flagInterval       int
+	flagPath           string
+	flagRestore        bool
+	flagDBAddr         string
+	flagKey            string
+	flagCryptoKey      string
+	flagConfig         string
+	flagTrustedSubnet  string
+	flagGRPCServerAddr string
+)
 
 type Config struct {
-	Addr      string `env:"ADDRESS" json:"addr"`
-	Interval  int    `env:"STORE_INTERVAL" json:"interval"`
-	Path      string `env:"FILE_STORAGE_PATH" json:"path"`
-	Restore   bool   `env:"RESTORE" json:"restore"`
-	DBAddr    string `env:"DATABASE_DSN" json:"db_addr"`
-	Key       string `env:"KEY" json:"key"`
-	CryptoKey string `env:"CRYPTO_KEY" json:"crypto_key"`
-	Config    string `env:"CONFIG"`
+	Addr           string `env:"ADDRESS" json:"addr"`
+	Interval       int    `env:"STORE_INTERVAL" json:"interval"`
+	Path           string `env:"FILE_STORAGE_PATH" json:"path"`
+	Restore        bool   `env:"RESTORE" json:"restore"`
+	DBAddr         string `env:"DATABASE_DSN" json:"db_addr"`
+	Key            string `env:"KEY" json:"key"`
+	CryptoKey      string `env:"CRYPTO_KEY" json:"crypto_key"`
+	Config         string `env:"CONFIG"`
+	TrustedSubnet  string `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
+	GRPCServerAddr string `env:"GRPC_SERVER_ADDR" json:"grpc_server_addr"`
 }
 
 func parseFlags() {
@@ -45,6 +51,8 @@ func parseFlags() {
 	flag.StringVar(&flagKey, "k", "", "key for signature")
 	flag.StringVar(&flagCryptoKey, "crypto-key", "./private_key.pem", "crypto key")
 	flag.StringVar(&flagConfig, "config", "", "config path")
+	flag.StringVar(&flagTrustedSubnet, "t", "", "trusted subnet")
+	flag.StringVar(&flagGRPCServerAddr, "g", ":9090", "grpc server address")
 	flag.Parse()
 
 	var cfg Config
@@ -69,6 +77,12 @@ func parseFlags() {
 	}
 	if cfg.CryptoKey != "" {
 		flagCryptoKey = cfg.CryptoKey
+	}
+	if cfg.TrustedSubnet != "" {
+		flagTrustedSubnet = cfg.TrustedSubnet
+	}
+	if cfg.GRPCServerAddr != "" {
+		flagGRPCServerAddr = cfg.GRPCServerAddr
 	}
 
 	if cfg.Config != "" {
@@ -101,6 +115,12 @@ func parseFlags() {
 		}
 		if flagCryptoKey == "" && jsonConfig.CryptoKey != "" {
 			flagCryptoKey = jsonConfig.CryptoKey
+		}
+		if flagTrustedSubnet == "" && jsonConfig.TrustedSubnet != "" {
+			flagTrustedSubnet = jsonConfig.TrustedSubnet
+		}
+		if flagGRPCServerAddr == "" && jsonConfig.GRPCServerAddr != "" {
+			flagGRPCServerAddr = jsonConfig.GRPCServerAddr
 		}
 	}
 }

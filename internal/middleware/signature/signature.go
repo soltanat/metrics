@@ -30,6 +30,7 @@ func (w *responseWriterWithHash) Header() http.Header {
 
 func (w *responseWriterWithHash) WriteHeader(code int) {
 	w.statusCode = code
+	w.Writer.WriteHeader(code)
 }
 
 func (w *responseWriterWithHash) Write(b []byte) (int, error) {

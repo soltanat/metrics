@@ -4,6 +4,7 @@ Content-Type: text/plain
 
 {}
 
+
 ###
 POST http://{{address}}/update/counter/metric_name/1
 Content-Type: text/plain
@@ -17,17 +18,19 @@ Content-Type: text/plain
 
 {}
 
+
 ###
 POST http://{{address}}/update/unknown/testCounter/100
 
 {}
 
+
 ###
 GET http://{{address}}/value/gauge/testUnknown133
 
+
 ###
 GET http://{{address}}/value/counter/metric_name
-
 
 
 ###
@@ -50,6 +53,7 @@ Content-Type: application/json
   "type": "counter"
 }
 
+
 ###
 GET http://{{address}}/
 Accept: html/text
@@ -63,7 +67,7 @@ Accept-Encoding: gzip
 
 
 ###
-POST http://{{address}}/updates
+POST http://{{address}}/updates/
 Content-Type: application/json
 
 [

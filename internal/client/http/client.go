@@ -1,9 +1,10 @@
 // Package client
 // Клиент для отправки метрик
-package client
+package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -22,6 +23,8 @@ const (
 )
 
 var errValidationName = fmt.Errorf("min name len 1")
+
+var ErrForbidden = fmt.Errorf("forbidden")
 
 type errHTTP struct {
 	Err error
@@ -59,7 +62,7 @@ func New(address string, transport http.RoundTripper) *Client {
 
 // Send
 // Отправляет метрику
-func (c *Client) Send(m *model.Metric) error {
+func (c *Client) Send(ctx context.Context, m *model.Metric) error {
 	if m.Name == "" {
 		return errValidationName
 	}
@@ -81,7 +84,7 @@ func (c *Client) Send(m *model.Metric) error {
 
 // Update
 // Отправляет метрику
-func (c *Client) Update(m *model.Metric) error {
+func (c *Client) Update(ctx context.Context, m *model.Metric) error {
 	if m.Name == "" {
 		return errValidationName
 	}
@@ -89,15 +92,15 @@ func (c *Client) Update(m *model.Metric) error {
 	reqURL, _ := url.JoinPath(c.address, updateEndpointPrefix)
 
 	bodyMessage := handler.Metrics{
-		ID:    m.Name,
+		MID:   m.Name,
 		MType: m.Type.String(),
 	}
 
 	switch m.Type {
 	case model.MetricTypeGauge:
-		bodyMessage.Value = &m.Gauge
+		bodyMessage.MValue = &m.Gauge
 	case model.MetricTypeCounter:
-		bodyMessage.Delta = &m.Counter
+		bodyMessage.MDelta = &m.Counter
 	}
 
 	body := new(bytes.Buffer)
@@ -111,22 +114,22 @@ func (c *Client) Update(m *model.Metric) error {
 
 // Updates
 // Обновляет слайс метрик
-func (c *Client) Updates(metrics []model.Metric) error {
+func (c *Client) Updates(ctx context.Context, mm []model.Metric) error {
 	reqURL, _ := url.JoinPath(c.address, updatesEndpointPrefix)
 
-	bodyMessage := make([]handler.Metrics, 0, len(metrics))
+	bodyMessage := make([]handler.Metrics, 0, len(mm))
 
-	for i := 0; i < len(metrics); i++ {
-		m := &metrics[i]
+	for i := 0; i < len(mm); i++ {
+		m := &mm[i]
 		bodyMetric := handler.Metrics{
-			ID:    m.Name,
+			MID:   m.Name,
 			MType: m.Type.String(),
 		}
 		switch m.Type {
 		case model.MetricTypeGauge:
-			bodyMetric.Value = &m.Gauge
+			bodyMetric.MValue = &m.Gauge
 		case model.MetricTypeCounter:
-			bodyMetric.Delta = &m.Counter
+			bodyMetric.MDelta = &m.Counter
 		}
 		bodyMessage = append(bodyMessage, bodyMetric)
 	}
@@ -158,6 +161,9 @@ func (c *Client) makeRequest(url string, contentType string, body io.Reader) err
 		err = resp.Body.Close()
 		if err != nil {
 			return fmt.Errorf("close body error: %v, status code: %d", err, resp.StatusCode)
+		}
+		if resp.StatusCode == http.StatusForbidden {
+			return ErrForbidden
 		}
 		return errUnexpectedResponse{
 			StatusCode: resp.StatusCode,
