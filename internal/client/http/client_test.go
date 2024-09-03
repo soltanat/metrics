@@ -1,4 +1,4 @@
-package client
+package http
 
 import (
 	"fmt"
@@ -71,7 +71,7 @@ func TestMetricsClient_Send(t *testing.T) {
 			defer server.Close()
 
 			api := Client{server.URL, http.DefaultClient}
-			err := api.Send(tt.metric)
+			err := api.Send(nil, tt.metric)
 
 			assert.NoError(t, err)
 		})
@@ -91,7 +91,7 @@ func TestMetricsClient_Send_IncorrectName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			api := Client{"http://localhost:8080", http.DefaultClient}
-			err := api.Send(tt.metric)
+			err := api.Send(nil, tt.metric)
 			assert.Error(t, err, errValidationName)
 		})
 	}
@@ -116,7 +116,7 @@ func TestMetricsClient_Send_ServerErrors(t *testing.T) {
 			defer server.Close()
 
 			api := Client{server.URL, http.DefaultClient}
-			err := api.Send(tt.metric)
+			err := api.Send(nil, tt.metric)
 
 			assert.Error(t, err, errUnexpectedResponse{
 				StatusCode: 500,
@@ -140,7 +140,7 @@ func TestMetricsClient_Send_AddressError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			api := Client{"http://bad_address", http.DefaultClient}
-			err := api.Send(tt.metric)
+			err := api.Send(nil, tt.metric)
 
 			var expectedErr errHTTP
 			assert.ErrorAs(t, err, &expectedErr)
@@ -215,7 +215,7 @@ func TestUpdate(t *testing.T) {
 
 			c.address = server.URL
 
-			err := c.Update(tt.m)
+			err := c.Update(nil, tt.m)
 			if tt.expectedErr != nil {
 				assert.Error(t, err, tt.expectedErr, "Expected error: %v", tt.expectedErr)
 			} else {

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package metrics;
+
+option go_package = "internal/proto";
+
+service MetricsService {
+  rpc BulkSendMetric (BulkSendMetricRequest) returns (BulkSendMetricResponse) {}
+}
+
+message SendMetricRequest {
+  string id = 1;
+  MetricType type = 2;
+  optional int64 delta = 3;
+  optional double value = 4;
+}
+
+message BulkSendMetricRequest {
+  repeated SendMetricRequest metrics = 1;
+}
+
+message BulkSendMetricResponse {}
+
+enum MetricType {
+  UNDEFINED = 0;
+  COUNTER = 1;
+  GAUGE = 2;
+}
+

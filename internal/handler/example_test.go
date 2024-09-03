@@ -102,14 +102,14 @@ func ExampleHandlers_StoreMetricsBatch() {
 
 	metrics := []Metrics{
 		{
-			ID:    "test",
-			MType: "gauge",
-			Value: float64Ptr(10.1),
+			MID:    "test",
+			MType:  "gauge",
+			MValue: float64Ptr(10.1),
 		},
 		{
-			ID:    "test",
-			MType: "counter",
-			Delta: intPtr(10),
+			MID:    "test",
+			MType:  "counter",
+			MDelta: intPtr(10),
 		},
 	}
 
@@ -150,9 +150,9 @@ func ExampleHandlers_StoreMetrics() {
 	defer server.Close()
 
 	metrics := Metrics{
-		ID:    "test",
-		MType: "gauge",
-		Value: float64Ptr(10.1),
+		MID:    "test",
+		MType:  "gauge",
+		MValue: float64Ptr(10.1),
 	}
 
 	reqBody, err := json.Marshal(metrics)
@@ -197,7 +197,7 @@ func ExampleHandlers_Value() {
 	defer server.Close()
 
 	metrics := Metrics{
-		ID:    "test",
+		MID:   "test",
 		MType: "gauge",
 	}
 

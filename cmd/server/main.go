@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"github.com/soltanat/metrics/internal/grpchandler"
+	"github.com/soltanat/metrics/internal/proto"
+	"google.golang.org/grpc"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -111,7 +115,25 @@ func main() {
 		}
 	}()
 
+	listen, err := net.Listen("tcp", flagGRPCServerAddr)
+	if err != nil {
+		l.Error().Err(err).Msg("unable to listen")
+	}
+
+	grpcServer := grpc.NewServer()
+	grpcService := grpchandler.NewService(s)
+
+	proto.RegisterMetricsServiceServer(grpcServer, grpcService)
+	go func() {
+		l.Info().Msgf("starting gRPC server on %s", flagGRPCServerAddr)
+		if err := grpcServer.Serve(listen); err != nil {
+			l.Error().Err(err).Msg("unable to serve gRPC server")
+		}
+	}()
+
 	gracefulShutdown()
+
+	grpcServer.Stop()
 
 	err = server.Close()
 	if err != nil {

@@ -5,22 +5,28 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/soltanat/metrics/internal/client/http"
 	"time"
 
 	"github.com/soltanat/metrics/internal/model"
 
 	"github.com/soltanat/metrics/internal"
-	"github.com/soltanat/metrics/internal/client"
 )
+
+type Client interface {
+	Send(ctx context.Context, m *model.Metric) error
+	Updates(ctx context.Context, mm []model.Metric) error
+	Update(ctx context.Context, m *model.Metric) error
+}
 
 // Reporter
 // Реализует интерфейс Reporter
 type Reporter struct {
-	client    *client.Client
+	client    Client
 	limitChan chan struct{}
 }
 
-func New(client *client.Client, limitChan chan struct{}) *Reporter {
+func New(client Client, limitChan chan struct{}) *Reporter {
 	reporter := &Reporter{
 		client:    client,
 		limitChan: limitChan,
@@ -28,7 +34,7 @@ func New(client *client.Client, limitChan chan struct{}) *Reporter {
 	return reporter
 }
 
-// Run
+// RunReporter
 // Запускает Reporter
 // Отправляет метрики в хранилище с помощью клиента, реализует отправку с повторными попытками и рейт лимитом
 func (w *Reporter) RunReporter(ctx context.Context, interval time.Duration, ch chan *model.Metric) error {
@@ -52,9 +58,9 @@ func (w *Reporter) RunReporter(ctx context.Context, interval time.Duration, ch c
 					if i+chunk > len(metrics) {
 						chunk = len(metrics) - i
 					}
-					err := w.client.Updates(metrics[i : i+chunk])
+					err := w.client.Updates(ctx, metrics[i:i+chunk])
 					if err != nil {
-						if errors.Is(err, client.ErrForbidden) {
+						if errors.Is(err, http.ErrForbidden) {
 							return model.ErrForbidden
 						}
 						return err

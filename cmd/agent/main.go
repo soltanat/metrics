@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	grpc2 "github.com/soltanat/metrics/internal/client/grpc"
+	http2 "github.com/soltanat/metrics/internal/client/http"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,7 +20,6 @@ import (
 	"github.com/soltanat/metrics/internal/poller"
 
 	"github.com/soltanat/metrics/internal"
-	"github.com/soltanat/metrics/internal/client"
 	"github.com/soltanat/metrics/internal/logger"
 	"github.com/soltanat/metrics/internal/reporter"
 )
@@ -100,12 +103,12 @@ func main() {
 
 	transport := http.DefaultTransport
 
-	transport = &client.GzipTransport{Transport: transport}
+	transport = &http2.GzipTransport{Transport: transport}
 
 	if flagKey != "" {
-		transport = &client.SignatureTransport{Transport: transport, Key: flagKey}
+		transport = &http2.SignatureTransport{Transport: transport, Key: flagKey}
 	}
-	transport = &client.LoggingTransport{Transport: transport}
+	transport = &http2.LoggingTransport{Transport: transport}
 
 	if flagCryptoKey != "" {
 		key, err := os.ReadFile(flagCryptoKey)
@@ -114,18 +117,35 @@ func main() {
 			return
 		}
 
-		transport, err = client.NewRSAEncryptionTransport(transport, key)
+		transport, err = http2.NewRSAEncryptionTransport(transport, key)
 		if err != nil {
 			l.Error().Err(err).Msg("unable to create crypto transport")
 			return
 		}
 	}
 
-	transport = &client.XRealIPTransport{Transport: transport}
+	transport = &http2.XRealIPTransport{Transport: transport}
 
-	cli := client.New(addr, transport)
+	_ = http2.New(addr, transport)
 
-	reporterInst := reporter.New(cli, make(chan struct{}, flagRateLimit))
+	conn, err := grpc.Dial(
+		flagGRPCServerAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(grpc2.LoggingInterceptor),
+	)
+	if err != nil {
+		l.Fatal().Err(err)
+	}
+	defer func() {
+		err = conn.Close()
+		if err != nil {
+			l.Error().Err(err).Msg("unable to close connection")
+		}
+	}()
+
+	grpcCli := grpc2.NewClient(conn)
+
+	reporterInst := reporter.New(grpcCli, make(chan struct{}, flagRateLimit))
 	Run(
 		context.Background(),
 		time.Second*time.Duration(flagPollInterval),

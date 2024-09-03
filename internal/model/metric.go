@@ -18,6 +18,53 @@ type Metric struct {
 	Counter int64
 }
 
+type InputMetric interface {
+	Type() string
+	Value() *float64
+	Delta() *int64
+	ID() string
+}
+
+func NewMetrics(input []InputMetric) ([]Metric, error) {
+	metrics := make([]Metric, 0, len(input))
+	for _, metric := range input {
+		m, err := NewMetric(metric)
+		if err != nil {
+			return nil, err
+		}
+		metrics = append(metrics, *m)
+	}
+	return metrics, nil
+}
+
+func NewMetric(input InputMetric) (*Metric, error) {
+	var metric *Metric
+
+	metricType, err := ParseMetricType(input.Type())
+	if err != nil {
+		return nil, ErrNotValidMetricType{Type: input.Type(), ErrBadRequest: ErrBadRequest{Err: err}}
+	}
+
+	switch metricType {
+	case MetricTypeGauge:
+		if input.Value() == nil {
+			return nil, ErrMissingGaugeValue
+		}
+		metric = NewGauge(input.ID(), *input.Value())
+	case MetricTypeCounter:
+		if input.Delta == nil {
+			return nil, ErrMissingCounterDelta
+		}
+		metric = NewCounter(input.ID(), *input.Delta())
+	default:
+		return nil, ErrNotValidMetricType{
+			Type: input.Type(), ErrBadRequest: ErrBadRequest{Err: fmt.Errorf("unknown metric type")},
+		}
+	}
+
+	return metric, nil
+}
+
 func NewGauge(name string, value float64) *Metric {
 	return &Metric{
 		Type:  MetricTypeGauge,

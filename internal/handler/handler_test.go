@@ -303,9 +303,9 @@ func TestHandlers_StoreMetrics(t *testing.T) {
 		{
 			name: "StoreGaugeMetric",
 			metrics: Metrics{
-				MType: "gauge",
-				ID:    "test-id",
-				Value: float64Ptr(10.1),
+				MType:  "gauge",
+				MID:    "test-id",
+				MValue: float64Ptr(10.1),
 			},
 			expectedCall: &StorageCall{
 				Metric: &model.Metric{
@@ -322,9 +322,9 @@ func TestHandlers_StoreMetrics(t *testing.T) {
 		{
 			name: "StoreCounterMetricExistMetric",
 			metrics: Metrics{
-				MType: "counter",
-				ID:    "test-id",
-				Delta: intPtr(5),
+				MType:  "counter",
+				MID:    "test-id",
+				MDelta: intPtr(5),
 			},
 			expectedCall: &StorageCall{
 				Metric: &model.Metric{
@@ -342,9 +342,9 @@ func TestHandlers_StoreMetrics(t *testing.T) {
 		{
 			name: "StoreCounterMetricNotExistMetric",
 			metrics: Metrics{
-				MType: "counter",
-				ID:    "test-id",
-				Delta: intPtr(5),
+				MType:  "counter",
+				MID:    "test-id",
+				MDelta: intPtr(5),
 			},
 			expectedCall: &StorageCall{
 				Metric: &model.Metric{
@@ -365,7 +365,7 @@ func TestHandlers_StoreMetrics(t *testing.T) {
 			name: "MissingValueForGaugeMetric",
 			metrics: Metrics{
 				MType: "gauge",
-				ID:    "test-id",
+				MID:   "test-id",
 			},
 			expectedCall: nil,
 			statusCode:   http.StatusBadRequest,
@@ -374,7 +374,7 @@ func TestHandlers_StoreMetrics(t *testing.T) {
 			name: "MissingDeltaForCounterMetric",
 			metrics: Metrics{
 				MType: "counter",
-				ID:    "test-id",
+				MID:   "test-id",
 			},
 			expectedCall: nil,
 			statusCode:   http.StatusBadRequest,
@@ -383,7 +383,7 @@ func TestHandlers_StoreMetrics(t *testing.T) {
 			name: "UnknownMetricType",
 			metrics: Metrics{
 				MType: "unknown",
-				ID:    "test-id",
+				MID:   "test-id",
 			},
 			expectedCall: nil,
 			statusCode:   http.StatusBadRequest,
@@ -392,7 +392,7 @@ func TestHandlers_StoreMetrics(t *testing.T) {
 			name: "InvalidRequestBody",
 			metrics: Metrics{
 				MType: "gauge",
-				ID:    "test-id",
+				MID:   "test-id",
 			},
 			expectedCall: nil,
 			statusCode:   http.StatusBadRequest,
